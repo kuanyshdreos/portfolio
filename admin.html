@@ -72,6 +72,8 @@
   .chip button{width:18px;height:18px;border-radius:50%;color:var(--muted)}
   .chip button:hover{background:#e0e0dc;color:var(--danger)}
 
+  .brandprev{width:64px;height:64px;border-radius:50%;background:#111 center/contain no-repeat;flex:none;border:1px solid var(--line)}
+  .brandprev.sq{border-radius:12px;background-color:#fff}
   .coverbox{display:flex;gap:16px;align-items:flex-start;background:#fafaf8;border-radius:10px;padding:12px;margin-bottom:12px}
   .coverbox canvas{width:260px;aspect-ratio:4/3;border-radius:12px;display:block;background:#111}
   .swatch{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
@@ -106,6 +108,7 @@
   <div class="tabs" id="tabs">
     <button data-v="works" class="on">Работы</button>
     <button data-v="prices">Цены</button>
+    <button data-v="clients">Клиенты</button>
     <button data-v="site">Сайт</button>
     <button data-v="publish">Публикация</button>
   </div>
@@ -147,6 +150,16 @@
     </div>
   </section>
 
+  <!-- ============ КЛИЕНТЫ ============ -->
+  <section class="view" id="v-clients">
+    <div class="box">
+      <h2>Бренды, с которыми вы работали</h2>
+      <p class="hint" style="margin:-6px 0 14px">Бегущая строка внизу главного экрана. Логотипы на сайте становятся белыми, поэтому лучше PNG с прозрачным фоном. Без логотипа покажется название. Если выбрать работу — клик по логотипу откроет этот ролик.</p>
+      <div id="clientsList"></div>
+      <button class="btn sm" id="addClient">+ бренд</button>
+    </div>
+  </section>
+
   <!-- ============ САЙТ ============ -->
   <section class="view" id="v-site">
     <div class="box">
@@ -158,6 +171,20 @@
       <label class="f"><span>Подпись на заставке (новая строка = перенос)</span><textarea data-site="tagline" data-br></textarea></label>
       <label class="f"><span>Ссылка для «contact» и «написать» в ценах (Telegram, WhatsApp, почта)</span><input type="text" data-site="contact" placeholder="https://t.me/username"></label>
       <label class="f"><span>About — абзацы (пустая строка = новый абзац)</span><textarea data-site="about" data-paras style="min-height:120px"></textarea></label>
+    </div>
+    <div class="box">
+      <h2>Заставка и иконка</h2>
+      <div class="row2">
+        <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Логотип вместо шара (на заставке и в углу сайта). PNG с прозрачным фоном</span>
+          <div class="inline"><div class="brandprev" id="logoPrev"></div><button class="btn sm" id="pickSiteLogo">Загрузить</button><button class="btn sm" id="clearSiteLogo">Вернуть шар</button></div></div>
+        <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Иконка во вкладке браузера (квадратная картинка)</span>
+          <div class="inline"><div class="brandprev sq" id="favPrev"></div><button class="btn sm" id="pickFav">Загрузить</button><button class="btn sm" id="clearFav">По умолчанию</button></div></div>
+      </div>
+      <div class="row2">
+        <label class="f"><span>Кнопка входа со звуком</span><input type="text" data-site="enterSound" placeholder="войти со звуком"></label>
+        <label class="f"><span>Кнопка входа без звука</span><input type="text" data-site="enterMute" placeholder="без звука"></label>
+      </div>
+      <p class="hint">Оставьте вторую кнопку пустой — будет одна кнопка входа.</p>
     </div>
     <div class="box">
       <h2>Аналитика: кто заходил, из каких стран</h2>
@@ -267,7 +294,7 @@ async function vimeoMeta(url){
   } catch { return { error: 'нет связи с Vimeo' }; }
 }
 const fmtDur = s => s ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '';
-function blank(){ return { site: { name: '', tagline: '', about: [], email: '', contact: '', socials: [], priceText: 'цены • пакеты • ', cfToken: '' }, categories: [], projects: [], packages: [] }; }
+function blank(){ return { site: { name: '', tagline: '', about: [], email: '', contact: '', socials: [], priceText: 'цены • пакеты • ', cfToken: '', logo: '', favicon: '', enterSound: 'войти со звуком', enterMute: 'без звука' }, categories: [], projects: [], packages: [], clients: [] }; }
 function normalize(d){
   const b = blank();
   d = d && typeof d === 'object' ? d : {};
@@ -275,6 +302,7 @@ function normalize(d){
   d.categories = Array.isArray(d.categories) ? d.categories : [];
   d.projects = (Array.isArray(d.projects) ? d.projects : []).map(p => ({ id: '', title: '', desc: '', category: '', format: '16:9', vimeo: '', loop: '', thumb: '', brand: '', logo: '', accent: '', cover: '', ...p }));
   d.packages = Array.isArray(d.packages) ? d.packages : [];
+  d.clients = Array.isArray(d.clients) ? d.clients : [];
   d.site.socials = (d.site.socials || []).map(s => Array.isArray(s) ? { label: s[0], url: s[1] } : s);
   return d;
 }
@@ -433,7 +461,7 @@ function renderEditor(){
     <label class="f"><span>Превью с Vimeo (фон обложки). Чтобы поменять — выберите обложку ролика в самом Vimeo, сайт подтянет её сам.</span><input type="text" data-k="thumb" value="${esc(p.thumb)}"></label>
     <label class="f"><span>ID для ссылки</span><input type="text" data-k="id" value="${esc(p.id)}"></label>
     <label class="f"><span>Ссылка для клиента — откроет сразу этот ролик</span>
-      <div class="inline"><input type="text" readonly value="${esc(base + '#p/' + p.id)}" id="clientLink"><button class="btn sm" id="copyLink">Копировать</button></div></label>`;
+      <div class="inline"><input type="text" readonly value="${esc(base + p.id)}" id="clientLink"><button class="btn sm" id="copyLink">Копировать</button></div></label>`;
 
   $$('[data-k]', E).forEach(inp => inp.addEventListener(inp.tagName === 'SELECT' ? 'change' : 'input', () => {
     const k = inp.dataset.k;
@@ -442,10 +470,10 @@ function renderEditor(){
     if (k === 'title' && (!p.id || p.id.startsWith('work'))) p.id = uniqueId(p.title, p);
     if (['title', 'brand', 'accent', 'thumb', 'logo', 'cover', 'category'].includes(k)) drawPreview(p);
     if (['vimeo', 'loop', 'category', 'thumb', 'cover'].includes(k)) renderList(); else renderListLite();
-    $('#clientLink').value = base + '#p/' + p.id;
+    $('#clientLink').value = base + p.id;
     changed();
   }));
-  $('[data-k=id]', E).addEventListener('change', e => { p.id = uniqueId(e.target.value, p); e.target.value = p.id; $('#clientLink').value = base + '#p/' + p.id; changed(); });
+  $('[data-k=id]', E).addEventListener('change', e => { p.id = uniqueId(e.target.value, p); e.target.value = p.id; $('#clientLink').value = base + p.id; changed(); });
   $('[data-k=vimeo]', E).addEventListener('change', e => {
     p.vimeo = cleanVimeo(e.target.value); e.target.value = p.vimeo; changed();
     if (p.vimeo) checkVimeo(p);
@@ -595,6 +623,7 @@ function renderSite(){
     };
   });
   renderSocials();
+  renderBrand();
 }
 function renderSocials(){
   $('#socials').innerHTML = D.site.socials.map((s, i) => `
@@ -759,7 +788,80 @@ $('#resetDraft').onclick = () => {
 function tab(v){ $(`#tabs [data-v="${v}"]`).click(); }
 
 // ---------- boot ----------
-function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); renderSite(); renderIssues(); }
+// ---------- site logo and favicon ----------
+function renderBrand(){
+  $('#logoPrev').style.backgroundImage = D.site.logo ? `url('${resolve(D.site.logo)}')` : 'radial-gradient(circle at 30% 30%,#3cff8f,#1fd1ff 55%,#111)';
+  $('#favPrev').style.backgroundImage = `url('${D.site.favicon ? resolve(D.site.favicon) : 'favicon.svg'}')`;
+}
+// resize, keep transparency, new file name each time so browsers don't show a cached old one
+async function setSiteImage(key, file, max){
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { alert('Нужна картинка: png, svg, webp или jpg'); return; }
+  const url = URL.createObjectURL(file);
+  const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = url; });
+  URL.revokeObjectURL(url);
+  if (!img) { alert('Не получилось открыть эту картинку'); return; }
+  const w = img.naturalWidth || 512, h = img.naturalHeight || 512, s = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
+  if (key === 'favicon') { c.width = c.height = max; const k = Math.min(max / w, max / h); c.getContext('2d').drawImage(img, (max - w * k) / 2, (max - h * k) / 2, w * k, h * k); }
+  else { c.width = Math.round(w * s); c.height = Math.round(h * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); }
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  if (pending.has(D.site[key])) pending.delete(D.site[key]);
+  D.site[key] = stage(`brand/${key}-${Date.now().toString(36)}.png`, new File([blob], key + '.png', { type: 'image/png' }));
+  renderBrand(); changed();
+}
+const pickImage = key => { const f = $('#coverFile'); f.value = ''; f.onchange = () => setSiteImage(key, f.files[0], key === 'favicon' ? 256 : 600); f.click(); };
+$('#pickSiteLogo').onclick = () => pickImage('logo');
+$('#pickFav').onclick = () => pickImage('favicon');
+$('#clearSiteLogo').onclick = () => { pending.delete(D.site.logo); D.site.logo = ''; renderBrand(); changed(); };
+$('#clearFav').onclick = () => { pending.delete(D.site.favicon); D.site.favicon = ''; renderBrand(); changed(); };
+
+// ---------- clients (brand logo strip) ----------
+function renderClients(){
+  const L = $('#clientsList');
+  L.innerHTML = D.clients.map((c, i) => `
+    <div class="inline" style="margin-bottom:8px;flex-wrap:wrap">
+      <div class="brandprev sq" style="width:96px;height:44px;background-color:#111;border-radius:8px;background-image:${c.logo ? `url('${esc(resolve(c.logo))}')` : 'none'}"></div>
+      <input type="text" data-cn="${i}" value="${esc(c.name)}" placeholder="название бренда" style="flex:1;min-width:140px">
+      <select data-cw="${i}" style="width:auto;min-width:150px"><option value="">— без ролика —</option>${D.projects.map(p => `<option value="${esc(p.id)}" ${p.id === c.work ? 'selected' : ''}>${esc(p.title || p.id)}</option>`).join('')}</select>
+      <button class="btn sm" data-cl="${i}">${c.logo ? 'Заменить лого' : 'Загрузить лого'}</button>
+      <button class="btn sm" data-cu="${i}">▲</button><button class="btn sm" data-cd="${i}">▼</button>
+      <button class="btn sm danger" data-cx="${i}">×</button>
+    </div>`).join('') || '<div class="empty" style="padding:20px">Брендов пока нет</div>';
+  $$('[data-cn]', L).forEach(i => i.oninput = () => { D.clients[+i.dataset.cn].name = i.value; changed(); });
+  $$('[data-cw]', L).forEach(s => s.onchange = () => { D.clients[+s.dataset.cw].work = s.value; changed(); });
+  $$('[data-cl]', L).forEach(b => b.onclick = () => {
+    const f = $('#logoFile'); f.value = '';
+    f.onchange = () => setClientLogo(+b.dataset.cl, f.files[0]);
+    f.click();
+  });
+  const swap = (a, b) => { if (b < 0 || b >= D.clients.length) return; [D.clients[a], D.clients[b]] = [D.clients[b], D.clients[a]]; renderClients(); changed(); };
+  $$('[data-cu]', L).forEach(b => b.onclick = () => swap(+b.dataset.cu, +b.dataset.cu - 1));
+  $$('[data-cd]', L).forEach(b => b.onclick = () => swap(+b.dataset.cd, +b.dataset.cd + 1));
+  $$('[data-cx]', L).forEach(b => b.onclick = () => {
+    const c = D.clients[+b.dataset.cx];
+    if (!confirm(`Удалить «${c.name || 'бренд'}»?`)) return;
+    pending.delete(c.logo); D.clients.splice(+b.dataset.cx, 1); renderClients(); changed();
+  });
+}
+async function setClientLogo(i, file){
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { alert('Нужна картинка: png (лучше с прозрачным фоном), svg или webp'); return; }
+  const url = URL.createObjectURL(file);
+  const img = await new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = url; });
+  URL.revokeObjectURL(url);
+  if (!img) { alert('Не получилось открыть этот логотип'); return; }
+  const w = img.naturalWidth || 400, h = img.naturalHeight || 160, k = Math.min(1, 400 / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  const cl = D.clients[i];
+  if (pending.has(cl.logo)) pending.delete(cl.logo);
+  cl.logo = stage(`clients/${slug(cl.name || 'brand')}-${Date.now().toString(36)}.png`, new File([blob], 'logo.png', { type: 'image/png' }));
+  renderClients(); changed();
+}
+$('#addClient').onclick = () => { D.clients.push({ name: '', logo: '', work: '' }); renderClients(); changed(); $('#clientsList input:last-of-type')?.focus(); };
+
+function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); renderClients(); renderSite(); renderIssues(); }
 (async () => {
   try { published = normalize(await fetch('data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); })); }
   catch { published = null; }

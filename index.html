@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Портфолио</title>
-<link rel="icon" href="data:,">
+<link rel="icon" id="favicon" href="favicon.svg">
 <style>
   :root{ --bg:#0a0a0a; --fg:#f2f2f2; --paper:#f7f7f7; --ink:#111; --muted:#8b8b8b; --accent:#3cff8f;
     --ease:cubic-bezier(.7,0,.2,1); --out:cubic-bezier(.2,.8,.2,1); --g1:#3cff8f; --g2:#1fd1ff; }
@@ -13,13 +13,14 @@
     font-family:"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-transform:lowercase}
   a{color:inherit;text-decoration:none}
   /* interface is lowercase by style; your own texts from the admin keep their capitals */
-  #tagline,#aboutTxt,#pkgs,#list .row h3,#list .row small,#player .meta,.mail{text-transform:none}
+  #tagline,#aboutTxt,#list .row h3,#list .row small,#player .meta,.mail{text-transform:none}
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-transform:inherit}
 
   body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
     background-image:linear-gradient(#1a1a1a 1px,transparent 1px),linear-gradient(90deg,#1a1a1a 1px,transparent 1px);
     background-size:44px 44px}
-  canvas#gl{position:fixed;inset:0;display:block;cursor:grab;touch-action:none;transition:filter .6s var(--ease),opacity .5s}
+  /* explicit size: a canvas is a replaced element, so inset:0 alone would show it at its (hi-dpi) buffer size */
+  canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;transition:filter .6s var(--ease),opacity .5s}
   canvas#gl.drag{cursor:grabbing}
 
   @keyframes blurIn{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:blur(0)}}
@@ -31,6 +32,9 @@
                radial-gradient(circle at 50% 85%, #fff 0, #555 25%, #111 60%);
     box-shadow:0 0 40px -6px var(--g1);animation:hue 8s linear infinite}
   .orb.sm{width:38px;height:38px;box-shadow:0 0 18px -4px var(--g1)}
+  .orb.brandlogo{background:center/contain no-repeat;box-shadow:none;animation:none;border-radius:0}
+  #intro .orb.brandlogo{width:min(160px,40vw);height:80px}
+  #home.brandlogo{width:auto;min-width:38px;max-width:120px;height:38px}
   @keyframes hue{to{filter:hue-rotate(360deg)}}
 
   /* ---------- intro ---------- */
@@ -44,7 +48,7 @@
   #intro .pct{position:absolute;bottom:24px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 
   /* ---------- top bar ---------- */
-  header{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;pointer-events:none}
+  header{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 16px max(18px, env(safe-area-inset-left));pointer-events:none}
   header>*{pointer-events:auto}
   #filters{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);overflow-x:auto;scrollbar-width:none;white-space:nowrap}
   #filters::-webkit-scrollbar{display:none}
@@ -80,28 +84,95 @@
   #about .txt{margin:auto 0;font-size:clamp(18px,2vw,22px);line-height:1.25}
   #about .txt p+p{margin-top:14px;color:#666;font-size:14px}
 
-  /* price */
-  #price .scroll{overflow-y:auto;margin:40px -6px 12px;padding:0 6px;flex:1}
-  #price h2{font-size:clamp(40px,5vw,54px);letter-spacing:-.04em;font-weight:400;line-height:1;margin-bottom:18px}
-  .pkg{border-top:1px solid #ddd;padding:16px 0}
-  .pkg .top{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
-  .pkg .name{font-size:13px;color:#777}
-  .pkg .cost{font-size:28px;letter-spacing:-.03em;line-height:1.1;text-align:right;margin-left:auto}
-  .pkg ul{list-style:none;margin:8px 0 6px;font-size:15px;line-height:1.45}
-  .pkg li::before{content:"— ";color:#aaa}
-  .pkg .note{font-size:12px;color:#888}
+  /* price popup: package cards → click one for its details */
+  #priceModal{position:fixed;inset:0;z-index:35;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.5);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .45s,visibility .45s}
+  #priceModal.on{opacity:1;visibility:visible}
+  body.pricing canvas#gl{filter:blur(8px) brightness(.6)}
+  .mcard{position:relative;background:var(--paper);color:var(--ink);border-radius:24px;width:min(780px,100%);max-height:calc(100svh - 32px);
+    overflow:auto;padding:30px;transform:translateY(26px) scale(.96);filter:blur(10px);opacity:0;
+    transition:transform .6s var(--out),filter .5s var(--out),opacity .5s var(--out);text-transform:none}
+  #priceModal.on .mcard{transform:none;filter:none;opacity:1}
+  .mx{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-size:17px;z-index:2;transition:transform .4s var(--ease)}
+  .mx:hover{transform:rotate(90deg)}
+  .mview{transition:opacity .35s,transform .45s var(--out)}
+  .mview.hide{display:none}
+  .mview.enter{opacity:0;transform:translateX(18px)}
+  .mcard h2{font-size:clamp(40px,6vw,60px);letter-spacing:-.045em;font-weight:400;line-height:1;margin:0 0 6px;text-transform:lowercase}
+  .mcard .sub{color:#888;font-size:14px;margin-bottom:22px}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+  .pcard{background:#fff;border-radius:18px;padding:20px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:196px;
+    border:1px solid #ececec;transition:transform .45s var(--out),box-shadow .45s var(--out),border-color .3s}
+  .pcard:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(0,0,0,.08);border-color:#ddd}
+  .pcard .nm{font-size:12px;color:#888;letter-spacing:.06em;text-transform:uppercase}
+  .pcard .cost{font-size:34px;letter-spacing:-.04em;line-height:1.05;margin-top:auto}
+  .pcard .per{font-size:13px;color:#888}
+  .vids{align-self:flex-start;font-size:12px;padding:5px 10px;border-radius:20px;background:#111;color:#fff}
+  .pcard .more{font-size:13px;color:#111;margin-top:6px}
+  .pcard.hot{background:#111;color:#fff;border-color:#111}
+  .pcard.hot .nm,.pcard.hot .per{color:#aaa}
+  .pcard.hot .vids{background:var(--accent);color:#111}
+  .pcard.hot .more{color:#fff}
+  .back{font-size:13px;color:#666;margin-bottom:18px;display:inline-flex;gap:6px}
+  .back:hover{color:var(--ink)}
+  .dcost{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 14px}
+  .dcost b{font-size:clamp(44px,7vw,68px);font-weight:400;letter-spacing:-.05em;line-height:1}
+  .dcost span{color:#888;font-size:16px}
+  .dlist{list-style:none;margin:18px 0;display:grid;gap:10px;font-size:16px}
+  .dlist li{display:flex;gap:10px;align-items:flex-start}
+  .dlist li::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:12px;display:grid;place-items:center;margin-top:1px}
+  .dtext{color:#555;font-size:15px;line-height:1.5;white-space:pre-line}
+  .dnote{font-size:13px;color:#888;margin-top:10px}
+  .order{display:flex;justify-content:center;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:16px;padding:16px;font-size:15px;margin-top:22px;transition:transform .3s,background .3s}
+  .order:hover{transform:scale(1.015);background:#000}
   .order{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:22px;padding:9px 16px;font-size:13px;transition:transform .3s}
   .order:hover{transform:scale(1.04)}
 
 
   /* ---------- corner buttons ---------- */
-  #priceBtn{position:fixed;left:14px;bottom:14px;z-index:12;width:104px;height:104px;border-radius:50%}
+  #priceBtn{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:12;width:104px;height:104px;border-radius:50%}
   #priceBtn svg{position:absolute;inset:0;animation:rot 14s linear infinite}
   #priceBtn text{fill:var(--fg);font-size:11.5px;letter-spacing:3px}
   #priceBtn .ic{position:absolute;inset:30px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--ink);display:grid;place-items:center;font-size:20px;transition:transform .4s var(--ease)}
   #priceBtn:hover .ic{transform:scale(1.12) rotate(-6deg)}
   @keyframes rot{to{transform:rotate(360deg)}}
-  #soundBtn{position:fixed;right:18px;bottom:18px;z-index:12;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:13px}
+  /* brands you've worked with: a slow endless strip of white logos at the bottom */
+  #clients{position:fixed;left:140px;right:70px;bottom:26px;z-index:11;height:40px;overflow:hidden;display:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  #clients.on{display:block}
+  body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0;pointer-events:none}
+  #clients{transition:opacity .4s}
+  #clients .track{display:flex;align-items:center;gap:56px;width:max-content;height:100%;animation:marquee var(--dur,40s) linear infinite}
+  #clients:hover .track{animation-play-state:paused}
+  @keyframes marquee{to{transform:translateX(-50%)}}
+  #clients .cl{height:100%;display:flex;align-items:center;flex:none;opacity:.42;transition:opacity .3s;cursor:default;text-transform:none}
+  #clients .cl.link{cursor:pointer}
+  #clients .cl:hover{opacity:1}
+  #clients .cl img{max-height:28px;max-width:130px;width:auto;filter:brightness(0) invert(1)}
+  #clients .cl span{font-size:15px;letter-spacing:.02em;white-space:nowrap}
+  #ringCap{position:fixed;left:16px;right:16px;bottom:calc(100% - var(--capBottom,30%));z-index:11;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);filter:blur(6px);transition:opacity .45s,transform .5s var(--out),filter .45s;text-transform:none}
+  #ringCap.on{opacity:1;transform:none;filter:none}
+  #ringCap .n{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-variant-numeric:tabular-nums;margin-bottom:6px}
+  #ringCap b{display:block;font-size:19px;font-weight:500;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ringCap small{display:block;font-size:13px;color:#8b8b8b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* tap hint under the card: a pulsing fingertip with ripples + swipe arrows */
+  #tapHint{position:fixed;left:0;right:0;top:var(--hintTop,75%);z-index:11;display:flex;justify-content:center;align-items:center;gap:12px;
+    pointer-events:none;opacity:0;transition:opacity .5s;text-transform:none}
+  #tapHint.on{opacity:1}
+  #tapHint .tap{position:relative;width:34px;height:34px;flex:none}
+  #tapHint .tap i{position:absolute;inset:11px;border-radius:50%;background:#fff;animation:tapDot 1.8s var(--out) infinite}
+  #tapHint .tap b,#tapHint .tap b+b{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);opacity:0;animation:tapRing 1.8s var(--out) infinite}
+  #tapHint .tap b+b{animation-delay:.3s}
+  @keyframes tapDot{0%,100%{transform:scale(1)}12%{transform:scale(.7)}30%{transform:scale(1)}}
+  @keyframes tapRing{0%{transform:scale(.3);opacity:0}12%{opacity:.9}70%,100%{transform:scale(1.25);opacity:0}}
+  #tapHint .txt{font-size:12px;color:#aaa;line-height:1.35}
+  #tapHint .txt span{display:inline-flex;gap:3px;color:#777;margin-left:4px}
+  #tapHint .txt span em{font-style:normal;animation:swipeL 1.8s ease-in-out infinite}
+  #tapHint .txt span em+em{animation-name:swipeR}
+  @keyframes swipeL{0%,100%{transform:none}50%{transform:translateX(-3px)}}
+  @keyframes swipeR{0%,100%{transform:none}50%{transform:translateX(3px)}}
+  #soundBtn{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:12;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:13px}
 
   /* ---------- list view ---------- */
   #list{position:fixed;inset:0;z-index:5;overflow-y:auto;padding:84px 18px 150px;opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s}
@@ -149,6 +220,9 @@
   #player .bar u{position:absolute;left:0;height:3px;width:0;background:#fff;border-radius:3px}
   #player .x{position:absolute;top:16px;right:16px;z-index:4;width:40px;height:40px;border-radius:50%;background:#fff;color:var(--ink);font-size:18px;display:grid;place-items:center;transition:transform .4s var(--ease)}
   #player .x:hover{transform:rotate(90deg)}
+  #player .frame:fullscreen{width:100%!important;height:100%!important;border-radius:0;background:#000}
+  #player .frame:-webkit-full-screen{width:100%!important;height:100%!important;border-radius:0;background:#000}
+  #player .frame:fullscreen .media>*{object-fit:contain}
   #player .empty{position:absolute;left:0;right:0;bottom:0;padding:14px;text-align:center;color:#ddd;font-size:13px;z-index:1;
     background:linear-gradient(transparent,rgba(0,0,0,.6))}
 
@@ -179,15 +253,28 @@
   #toast.on{opacity:1;transform:translate(-50%,0)}
 
   @media (max-width:700px){
+    /* phone: its own full-width line above the corner buttons instead of squeezing between them */
+    #clients{left:0;right:0;bottom:calc(88px + env(safe-area-inset-bottom));height:28px;
+      -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+    #clients .track{gap:32px}
+    #clients .cl{opacity:.35}
+    #clients .cl img{max-height:18px;max-width:84px}
+    #clients .cl span{font-size:13px}
+    /* soft dark fade at the bottom so the logos and corner buttons sit on a calm background */
+    body.has-clients::after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-index:10;pointer-events:none;
+      background:linear-gradient(transparent,rgba(10,10,10,.92) 30%,#0a0a0a 60%)}
+    body.has-clients.listview::after,body.has-clients.playing::after{display:none}
     header{flex-wrap:wrap}
     #filters{order:3;width:100%}
     #viewBtn{display:block}
     #list{padding-top:110px}
-    #priceBtn{width:84px;height:84px} #priceBtn .ic{inset:24px}
+    #priceBtn{width:68px;height:68px;left:10px} #priceBtn .ic{inset:20px;font-size:15px;border-radius:9px}
+    #priceBtn text{font-size:13px}
     #player .wrap{gap:10px}
     #player .meta b{font-size:17px}
     #player .x{top:max(12px, env(safe-area-inset-top));right:12px}
   }
+  @media (prefers-reduced-motion:reduce){ #clients .track,#priceBtn svg,.orb{animation:none!important} }
   @media (hover:none){ #player .hit,#player .bar{cursor:auto} #cur{display:none} }
 </style>
 </head>
@@ -224,11 +311,14 @@
   <div class="txt fade" id="aboutTxt" style="transition-delay:.25s"></div>
   <div class="foot fade" style="transition-delay:.4s"><a class="mail"></a><div class="socials"></div></div>
 </section>
-<section id="price" class="panel wide">
-  <button class="close" data-close>закрыть <b>×</b></button>
-  <div class="scroll fade" style="transition-delay:.25s"><h2>цены</h2><div id="pkgs"></div></div>
-  <div class="foot fade" style="transition-delay:.4s"><a class="order" id="orderBtn" target="_blank" rel="noopener">написать →</a><div class="socials"></div></div>
-</section>
+<div id="priceModal" role="dialog" aria-modal="true" aria-label="цены">
+  <div class="mcard">
+    <button class="mx" aria-label="закрыть">×</button>
+    <div class="mview" id="pmList"><h2>цены</h2><p class="sub">выберите пакет — нажмите, чтобы увидеть подробности</p><div class="pgrid" id="pkgs"></div>
+      <a class="order" id="orderBtn" target="_blank" rel="noopener">обсудить свой проект →</a></div>
+    <div class="mview hide" id="pmDetail"></div>
+  </div>
+</div>
 
 <section id="list"></section>
 
@@ -237,6 +327,9 @@
     <text><textPath href="#circ" id="priceText"></textPath></text></svg>
   <span class="ic">✦</span>
 </button>
+<div id="ringCap" aria-live="polite"><span class="n"></span><b></b><small></small></div>
+<div id="tapHint" aria-hidden="true"><div class="tap"><b></b><b></b><i></i></div><div class="txt">нажмите — смотреть<br>листайте <span><em>←</em><em>→</em></span></div></div>
+<div id="clients" aria-label="клиенты"><div class="track"></div></div>
 <button id="soundBtn" aria-label="звук">♪</button>
 
 <section id="player">
@@ -246,7 +339,7 @@
     <div class="bar"><i></i><u></u></div>
     <div class="under">
       <div class="meta"><b></b><span></span></div>
-      <div class="ctl"><span class="time"></span><button class="ib" id="muteBtn" aria-label="звук">🔊</button></div>
+      <div class="ctl"><span class="time"></span><button class="ib" id="muteBtn" aria-label="звук">🔊</button><button class="ib" id="fsBtn" aria-label="на весь экран">⤢</button></div>
     </div>
   </div>
   <button class="x" aria-label="закрыть">×</button>
@@ -267,6 +360,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&
 const body = document.body;
 const hues = [150, 190, 280, 320, 20, 60, 230, 110];
 const isTouch = matchMedia('(hover:none)').matches;
+const TAP = isTouch ? 1 : 2;                    // blur kernel radius: 3×3 on phones, 5×5 on desktop
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;   // system setting "reduce motion"
 
 let DATA, SITE, PROJECTS = [], CATS = [], filter = 'all';
 
@@ -337,7 +432,7 @@ const group = new THREE.Group(); scene.add(group);
 const SPIN = .18;                            // idle rotation speed (radians per second)
 const TURN = .7, RISE = .42;                // angle step and height step per card (~9 per turn)
 // radius / card scale depend on the screen: wide spiral on desktop, narrow one on a portrait phone
-const LAY = { R: 5.8, cs: 1 };
+const LAY = { R: 5.8, cs: 1, ring: false, ringY: 0 };   // ring: one centered row instead of a helix (portrait phones)
 const BAND = .3;                            // visible height of the spiral (0..1 of half-screen) before cards fade out
 const FOCUS = .42;                          // radius of the crisp zone around screen center
 // every card is 4:3 like the original; any video (16:9, 9:16) is center-cropped into it
@@ -373,12 +468,12 @@ const frag = `
     if (uPix > 0.) { vec2 g = vec2(uPix, uPix / ca); uv = (floor(uv * g) + .5) / g; }
     vec2 uc = fit(uv, uTexAspect, ca), uvv = fit(uv, uVAspect, ca);
     vec3 c = vec3(0.), v = vec3(0.);
-    for (int x = -2; x <= 2; x++) for (int y = -2; y <= 2; y++) {
+    for (int x = -${TAP}; x <= ${TAP}; x++) for (int y = -${TAP}; y <= ${TAP}; y++) {
       vec2 o = vec2(float(x), float(y)) * uBlur;
       c += texture2D(map, clamp(uc + o, .001, .999)).rgb;
       if (uMix > .001) v += texture2D(vmap, clamp(uvv + o, .001, .999)).rgb;
     }
-    c = mix(c, v, uMix) / 25.;
+    c = mix(c, v, uMix) / ${(2 * TAP + 1) ** 2}.;
     float d = box((vUv - .5) * uSize, uSize * .5, .12);
     float a = 1. - smoothstep(-.01, .01, d);
     gl_FragColor = vec4(c * uDim * mix(.08, 1., uReveal), a * uOpacity);
@@ -466,11 +561,21 @@ function resize(){
   // so a card crossing the center fills ~75% of the screen width
   const tan = Math.tan(THREE.MathUtils.degToRad(22.5));
   if (camera.aspect < 1) {
-    LAY.R = 3.4; LAY.cs = .72;
+    LAY.R = 3.4; LAY.cs = .72; LAY.ring = true;
     camera.position.z = LAY.R + (3 * LAY.cs) / (.75 * 2 * tan * camera.aspect);
+    // vertical spot: halfway between the filters at the top and the price button at the bottom
+    const top = $('#filters').getBoundingClientRect().bottom || 100;
+    const bottom = $('#priceBtn').getBoundingClientRect().top || h - 110;
+    const cy = (top + bottom) / 2, ndc = 1 - 2 * cy / h;
+    LAY.ringY = ndc * (camera.position.z - LAY.R) * tan;
+    // caption sits right under the centered card
+    const halfCard = (2.25 * LAY.cs / 2) / ((camera.position.z - LAY.R) * tan) * (h / 2);
+    document.documentElement.style.setProperty('--capBottom', Math.round(cy - halfCard - 14) + 'px');
+    document.documentElement.style.setProperty('--hintTop', Math.round(cy + halfCard + 16) + 'px');
   } else {
-    LAY.R = 5.8; LAY.cs = 1;
-    camera.position.z = 16.5;
+    // same narrow spiral as on phones, the card crossing the center takes ~42% of the screen width
+    LAY.R = 3.4; LAY.cs = .72; LAY.ring = false;
+    camera.position.z = LAY.R + (3 * LAY.cs) / (.42 * 2 * tan * camera.aspect);
   }
   camera.updateProjectionMatrix();
   if (player.classList.contains('on')) fitFrame();
@@ -484,17 +589,28 @@ addEventListener('wheel', e => { if (!blocked() && !body.classList.contains('lis
 canvas.addEventListener('pointerdown', e => {
   if (blocked()) return;
   dragging = true; moved = 0; flingV = 0; lastX = e.clientX; lastY = e.clientY; canvas.classList.add('drag'); setMouse(e);
+  swipe = { x0: e.clientX, s0: scrollT, touch: e.pointerType === 'touch' };
 });
+let swipe = null;
 addEventListener('pointermove', e => {
   setMouse(e);
   cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px';
   if (!dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
   lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
-  if (e.pointerType === 'touch') { const d = (dx - dy) * .009; scrollT += d; flingV = d; }
+  if (e.pointerType === 'touch') { const d = (LAY.ring ? -dx : dx - dy) * .009; scrollT += d; flingV = d; }
   else { scrollT += dx * .007; flingV = dx * .007; rotXT = Math.max(-.4, Math.min(.4, rotXT + dy * .003)); }
 });
-addEventListener('pointerup', () => { if (dragging) { dragging = false; canvas.classList.remove('drag'); } });
+addEventListener('pointerup', e => {
+  if (!dragging) return;
+  dragging = false; canvas.classList.remove('drag');
+  // ring: a swipe moves exactly one card in its direction (like stories)
+  if (LAY.ring && swipe && Math.abs(e.clientX - swipe.x0) > 30) {
+    scrollT = Math.round(swipe.s0 / TURN) * TURN + (e.clientX < swipe.x0 ? TURN : -TURN);
+    stepClock = 0;
+  }
+  swipe = null;
+});
 
 const ray = new THREE.Raycaster();
 function pick(){
@@ -505,7 +621,8 @@ function pick(){
 }
 
 // click: the card flies toward you while a white circle grows from the click, then the player opens
-let flying = null, flyT = 0, spin = .3;
+let flying = null, flyT = 0, spin = .3, stepClock = 0;
+const STEP_HOLD = 2.6;                         // phone ring: seconds a card stays in the center
 canvas.addEventListener('click', async e => {
   if (moved >= 6 || blocked() || flying) return;
   const m = pick(); if (!m) return;
@@ -530,6 +647,24 @@ function setHovered(m){
 const v3 = new THREE.Vector3();
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 let t0 = performance.now(), introSpin = 8, prevScroll = 0, speed = 0;
+// phone ring: name, category and position of the card in the center
+let capP = null;
+function updateRingCap(){
+  const el = $('#ringCap');
+  const p = centerCard && centerCard.userData.p;
+  const show = LAY.ring && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
+    && Math.abs(Math.sin(centerCard.userData.t)) < .2;      // only once the card has (nearly) arrived
+  if (p !== capP && p) {
+    capP = p;
+    const list = visibleProjects(), i = list.indexOf(p);
+    $('.n', el).textContent = `${String(i + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}`;
+    $('b', el).textContent = p.title;
+    $('small', el).textContent = [p.category, p.desc].filter(Boolean).join(' · ');
+  }
+  el.classList.toggle('on', !!show);
+  $('#tapHint').classList.toggle('on', !!show && !hintDone);
+}
+let hintDone = false;
 function frame(now){
   // never negative (first rAF timestamp can predate t0) and never huge (tab was hidden) —
   // otherwise the time-based easing below would overshoot and blow up
@@ -537,8 +672,17 @@ function frame(now){
   const idle = !dragging && !blocked() && !flying;
   // idle spin eases to a stop while a card is hovered, and picks up again when the cursor leaves
   const E = k => 1 - Math.pow(1 - k, dt * 60);   // per-frame factor tuned at 60fps → time-based
-  spin += ((idle && !hovered ? SPIN : 0) - spin) * E(.06);
-  if (idle) { scrollT += dt * spin + (hovered ? 0 : flingV * dt * 60); flingV *= hovered ? 0 : Math.pow(.92, dt * 60); }
+  if (LAY.ring) {
+    flingV = 0;
+    if (idle) {
+      stepClock += dt;
+      if (stepClock > STEP_HOLD && !calm) { stepClock = 0; scrollT = Math.round(scrollT / TURN) * TURN + TURN; }
+    } else stepClock = 0;
+    if (!dragging) scrollT += (Math.round(scrollT / TURN) * TURN - scrollT) * E(.12);   // settle on the nearest card
+  } else {
+    spin += ((idle && !hovered && !calm ? SPIN : 0) - spin) * E(.06);
+    if (idle) { scrollT += dt * spin + (hovered ? 0 : flingV * dt * 60); flingV *= hovered ? 0 : Math.pow(.92, dt * 60); }
+  }
   introSpin += (0 - introSpin) * E(.035);
   scroll += (scrollT - scroll) * E(.08);
   rotX += (rotXT - rotX) * E(.07);
@@ -546,8 +690,8 @@ function frame(now){
   const vel = (scroll - prevScroll) / Math.max(dt, 1 / 240); prevScroll = scroll;
   speed += (Math.min(1, Math.max(0, Math.abs(vel) - .8) * .45) - speed) * E(.2);
 
-  group.rotation.x = .12 + rotX + mouse.y * .04;
-  group.rotation.z = mouse.x * -.02;
+  group.rotation.x = LAY.ring ? 0 : .12 + rotX + mouse.y * .04;
+  group.rotation.z = LAY.ring ? 0 : mouse.x * -.02;
   group.updateMatrixWorld();
 
   // smooth per-project fades: cover appearing after load, cover ↔ loop on hover
@@ -565,7 +709,8 @@ function frame(now){
     const d = m.userData, u = m.material.uniforms;
     const t = ((d.base - scroll - introSpin) % span + span) % span - span / 2;
     d.t = t;
-    const y = -t / TURN * RISE;
+    // phone: a flat ring always in the vertical middle; desktop: the helix rises with each card
+    const y = LAY.ring ? LAY.ringY : -t / TURN * RISE;
     m.position.set(Math.sin(t) * LAY.R, y, Math.cos(t) * LAY.R);
     m.rotation.y = t;                                    // continuous turn, no 180° snap at the sides
     d.hover += ((m === hovered ? 1 : 0) - d.hover) * E(.15);
@@ -583,7 +728,7 @@ function frame(now){
     const off = d.focus;
     // mosaic starts with very fine cells (barely visible) and coarsens gradually — no visible jump
     u.uPix.value = off > .15 ? 160 - (off - .15) / .85 * 125 : 0;
-    u.uBlur.value = off * .009;
+    u.uBlur.value = off * .009 * (2 / TAP);   // fewer samples spaced wider = same softness
     u.uDim.value = 1 - off * .35;
     u.uBend.value = d.baseBend + speed * .05;
     const edge = Math.max(0, Math.min(1, (span / 2 - Math.abs(t)) / 4));
@@ -591,13 +736,16 @@ function frame(now){
     // the lower edge cuts in closer to the center, so only the top two rows stay
     // visible window is symmetric around the screen center
     const band = 1 - smooth(BAND, BAND + .3, Math.abs(v3.y));
-    u.uOpacity.value = m === flying ? 0 : edge * band;
+    // on the ring only one turn is shown (cards further along would sit on top of each other)
+    const ringFade = LAY.ring ? 1 - smooth(2.5, 3.05, Math.abs(t)) : 1;
+    u.uOpacity.value = m === flying ? 0 : edge * band * ringFade;
     m.renderOrder = m === flying ? 10000 : Math.round(Math.cos(t) * 1000);   // fine-grained so overlaps don't flicker
   });
   centerCard = best;
 
 
   setHovered(blocked() || body.classList.contains('listview') || isTouch ? null : pick());
+  updateRingCap();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -657,10 +805,42 @@ $$('#menu [data-go]').forEach(a => a.onclick = e => {
   const g = a.dataset.go;
   if (g === 'works') closePanels();
   if (g === 'about') openPanel('#about');
-  if (g === 'price') openPanel('#price');
+  if (g === 'price') { closePanels(); openPrice(); }
   if (g === 'contact') { closePanels(); window.open(SITE.contact || 'mailto:' + SITE.email, '_blank'); }
 });
-$('#priceBtn').onclick = () => openPanel('#price', $('#priceBtn .ic'));
+$('#priceBtn').onclick = () => openPrice();
+
+// ---------- price popup ----------
+const priceModal = $('#priceModal');
+function openPrice(){
+  showPriceView('#pmList');
+  priceModal.classList.add('on'); body.classList.add('pricing');
+  blip(300, .18, .05);
+}
+function closePrice(){ priceModal.classList.remove('on'); body.classList.remove('pricing'); }
+function showPriceView(id){
+  ['#pmList', '#pmDetail'].forEach(v => $(v).classList.toggle('hide', v !== id));
+  const el = $(id); el.classList.add('enter'); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
+  $('.mcard', priceModal).scrollTop = 0;
+}
+function showPackage(i){
+  const k = (DATA.packages || [])[i]; if (!k) return;
+  const contact = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#pmDetail').innerHTML = `
+    <button class="back">← все пакеты</button>
+    <h2>${esc(k.name)}</h2>
+    <div class="dcost"><b>${esc(k.price)}</b>${k.period ? `<span>${esc(k.period)}</span>` : ''}</div>
+    ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
+    ${(k.items || []).length ? `<ul class="dlist">${k.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    ${k.details ? `<p class="dtext">${esc(k.details)}</p>` : ''}
+    ${k.note ? `<p class="dnote">${esc(k.note)}</p>` : ''}
+    <a class="order" href="${esc(contact)}" target="_blank" rel="noopener">заказать «${esc(k.name)}» →</a>`;
+  $('#pmDetail .back').onclick = () => showPriceView('#pmList');
+  showPriceView('#pmDetail');
+  blip(520, .08);
+}
+$('.mx', priceModal).onclick = closePrice;
+priceModal.addEventListener('click', e => { if (e.target === priceModal) closePrice(); });
 $('#home').onclick = e => { e.preventDefault(); closeAll(); setFilter('all', true); };
 
 // ---------- fullscreen player: own mp4 or Vimeo, controlled from the cursor (tap on phones) ----------
@@ -764,11 +944,16 @@ function openPlayer(p){
   $('#player .meta span').textContent = p.desc || '';
   $('#player .bar').style.visibility = ctrl.kind === 'none' ? 'hidden' : '';
   $('#muteBtn').style.display = ctrl.kind === 'none' ? 'none' : '';
+  $('#fsBtn').hidden = ctrl.kind === 'none';
   player.classList.toggle('novideo', ctrl.kind === 'none');
   fitFrame(); updateUI();
   player.classList.add('on'); body.classList.add('playing');
   if (playingVideo) { setHovered(null); }
   setHash('p/' + encodeURIComponent(p.id));
+  hintDone = true;
+  if (!new URLSearchParams(location.search).has('draft') && navigator.sendBeacon) {
+    try { navigator.sendBeacon('/hit', new Blob([p.id], { type: 'text/plain' })); } catch {}
+  }
 }
 function closePlayer(){
   if (!player.classList.contains('on')) return;
@@ -837,6 +1022,22 @@ $('#player .hit').onclick = () => { if (ctrl.kind !== 'none') toggle(); };
   bar.addEventListener('pointerup', () => { scrub = false; });
 }
 $('#muteBtn').onclick = () => setMuted(!ctrl.muted);
+// full screen: the video frame fills the screen; wide videos also try to turn the phone sideways
+{
+  const canFs = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!canFs) $('#fsBtn').style.display = 'none';
+  $('#fsBtn').onclick = async () => {
+    const f = $('#player .frame');
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document); return;
+    }
+    try { await (f.requestFullscreen || f.webkitRequestFullscreen).call(f); } catch { return; }
+    if (playerAspect() > 1 && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+  };
+  const onFs = () => { if (!(document.fullscreenElement || document.webkitFullscreenElement)) { try { screen.orientation.unlock(); } catch {} fitFrame(); } };
+  document.addEventListener('fullscreenchange', onFs);
+  document.addEventListener('webkitfullscreenchange', onFs);
+}
 // closing: a black circle grows from where you clicked, the player is removed under it, then it fades
 async function closeWithWipe(x = innerWidth / 2, y = innerHeight / 2){
   if (!player.classList.contains('on') || wipeBusy) return;
@@ -920,9 +1121,9 @@ function applyHash(){
 }
 
 function blocked(){
-  return !$('#intro').classList.contains('gone') || player.classList.contains('on') || body.classList.contains('panel-open');
+  return !$('#intro').classList.contains('gone') || player.classList.contains('on') || body.classList.contains('panel-open') || body.classList.contains('pricing');
 }
-function closeAll(){ closePanels(); closePlayer(); }
+function closeAll(){ closePanels(); closePrice(); closePlayer(); }
 addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (player.classList.contains('on')) closeWithWipe(); else closeAll(); }
   if (e.key === ' ' && player.classList.contains('on') && ctrl.kind !== 'none') { e.preventDefault(); toggle(); }
@@ -937,6 +1138,16 @@ addEventListener('keydown', e => {
   PROJECTS = (DATA.projects || []).filter(p => p && p.title).map((p, i) => ({ ...p, id: p.id || 'work-' + (i + 1) }));
 
   document.title = `${SITE.name || 'Портфолио'} ✲ Портфолио`;
+  if (SITE.favicon) $('#favicon').href = U(SITE.favicon);
+  // your logo instead of the glowing orb (intro + top-left corner)
+  if (SITE.logo) $$('#intro .orb, #home').forEach(el => {
+    el.classList.add('brandlogo');
+    el.style.backgroundImage = `url("${U(SITE.logo)}")`;
+  });
+  // intro buttons: texts from the admin; an empty second text leaves a single "enter" button
+  if (SITE.enterSound) $('#intro [data-sound="1"]').textContent = SITE.enterSound;
+  if (SITE.enterMute === '') $('#intro [data-sound="0"]').remove();
+  else if (SITE.enterMute) $('#intro [data-sound="0"]').textContent = SITE.enterMute;
   // visitor stats (countries, visits per day/week/month) — Cloudflare Web Analytics, no cookies;
   // skipped in admin preview so your own checks don't count
   if (SITE.cfToken && !new URLSearchParams(location.search).has('draft')) {
@@ -951,9 +1162,30 @@ addEventListener('keydown', e => {
   $$('.socials').forEach(d => d.innerHTML = (SITE.socials || []).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(''));
   $('#priceText').textContent = (SITE.priceText || 'цены • пакеты • ').repeat(3);
   $('#orderBtn').href = SITE.contact || 'mailto:' + (SITE.email || '');
-  $('#pkgs').innerHTML = (DATA.packages || []).map(k => `
-    <div class="pkg"><div class="top"><span class="name">${esc(k.name)}</span><span class="cost">${esc(k.price)}</span></div>
-      <ul>${(k.items || []).map(i => `<li>${esc(i)}</li>`).join('')}</ul>${k.note ? `<div class="note">${esc(k.note)}</div>` : ''}</div>`).join('');
+  // brands strip: two copies of the list so the loop is seamless
+  const clients = (DATA.clients || []).filter(c => c && (c.name || c.logo));
+  if (clients.length) {
+    const one = clients.map((c, i) => `<div class="cl ${c.work ? 'link' : ''}" data-i="${i}" title="${esc(c.name)}">${
+      c.logo ? `<img src="${esc(U(c.logo))}" alt="${esc(c.name)}">` : `<span>${esc(c.name)}</span>`}</div>`).join('');
+    const track = $('#clients .track');
+    track.innerHTML = one.repeat(clients.length < 6 ? 4 : 2);
+    track.style.setProperty('--dur', Math.max(20, clients.length * (clients.length < 6 ? 8 : 4)) + 's');
+    $('#clients').classList.add('on');
+    body.classList.add('has-clients');
+    $$('#clients .cl.link').forEach(el => el.onclick = e => {
+      const p = PROJECTS.find(x => x.id === clients[+el.dataset.i].work);
+      if (p) morphOpen(p, e.clientX, e.clientY);
+    });
+  }
+  $('#pkgs').innerHTML = (DATA.packages || []).map((k, i) => `
+    <button class="pcard ${k.hot ? 'hot' : ''}" data-i="${i}">
+      <span class="nm">${esc(k.name)}</span>
+      ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
+      <span class="cost">${esc(k.price)}</span>
+      ${k.period ? `<span class="per">${esc(k.period)}</span>` : ''}
+      <span class="more">подробнее →</span>
+    </button>`).join('') || '<p class="sub">пакеты скоро появятся</p>';
+  $$('#pkgs .pcard').forEach(b => b.onclick = () => showPackage(+b.dataset.i));
 
   // always take the current thumbnail from Vimeo, so changing it in Vimeo updates the site;
   // the saved one is only a fallback if Vimeo doesn't answer
@@ -968,6 +1200,7 @@ addEventListener('keydown', e => {
 
   renderFilters(); buildSpiral(); renderList(); resize();
   addEventListener('resize', resize);
+  if (window.visualViewport) visualViewport.addEventListener('resize', resize);
 
   let shown = 0;
   const iv = setInterval(() => {
@@ -980,7 +1213,8 @@ addEventListener('keydown', e => {
     blip(330, .25, .06);
     $('#intro').classList.add('gone');
     introSpin = 8;
-    ['header', '#priceBtn', '#soundBtn'].forEach((s, k) => { const el = $(s); el.style.animationDelay = .3 + k * .1 + 's'; el.classList.add('blur-in'); });
+    resize();
+    ['header', '#priceBtn', '#soundBtn', '#clients'].forEach((s, k) => { const el = $(s); el.style.animationDelay = .3 + k * .1 + 's'; el.classList.add('blur-in'); });
     applyHash();
   });
   requestAnimationFrame(frame);
