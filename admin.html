@@ -391,7 +391,7 @@ $('#quickVimeo').onkeydown = e => { if (e.key === 'Enter') $('#quickAdd').click(
 function renderEditor(){
   const E = $('#editor'), p = D.projects[sel];
   if (!p) { E.innerHTML = '<div class="empty">Выберите работу слева или добавьте новую</div>'; return; }
-  const base = (cfg.siteUrl || location.origin + location.pathname.replace(/admin\.html$/, '')).replace(/\/?$/, '/');
+  const base = (cfg.siteUrl || location.origin + location.pathname.replace(/admin(\.html)?\/?$/, '')).replace(/\/?$/, '/');
   E.innerHTML = `
     <div class="inline" style="justify-content:space-between;margin-bottom:12px">
       <h2 style="margin:0">${esc(p.title || 'Новая работа')}</h2>
@@ -633,7 +633,7 @@ function renderIssues(){
 }
 
 // ---------- preview ----------
-$('#previewBtn').onclick = () => { localStorage.setItem(DRAFT, JSON.stringify(D)); localStorage.setItem(BLOBS, JSON.stringify(blobs)); window.open('index.html?draft=1', 'portfolio-preview'); };
+$('#previewBtn').onclick = () => { localStorage.setItem(DRAFT, JSON.stringify(D)); localStorage.setItem(BLOBS, JSON.stringify(blobs)); window.open('./?draft=1', 'portfolio-preview'); };
 
 // ---------- publishing ----------
 const cfg = (() => { try { return JSON.parse(localStorage.getItem(CFG)) || {}; } catch { return {}; } })();

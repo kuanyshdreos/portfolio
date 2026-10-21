@@ -33,17 +33,13 @@
   "projects": [
     {
       "id": "qfitness",
-      "title": "Qfitness",
+      "title": "qfitness",
       "desc": "Рилс для фитнес-клуба.",
       "category": "рилсы",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238058732",
       "loop": "",
-      "thumb": "https://i.vimeocdn.com/video/2215072938-f0879555e9553cc47dfde2af3aa6d067436fa2b5e82a2eaf4f2a3f51f17703d3-d_1280?region=us",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": "https://i.vimeocdn.com/video/2215057420-5e9241376a230a8142561e1a9e3590d4ccd959fe75a0c08a6bf5c616e3b600f7-d_1280?region=us"
     },
     {
       "id": "project-one",
@@ -53,11 +49,7 @@
       "format": "16:9",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-two",
@@ -67,11 +59,7 @@
       "format": "9:16",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-three",
@@ -81,11 +69,7 @@
       "format": "16:9",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-four",
@@ -95,11 +79,7 @@
       "format": "9:16",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-five",
@@ -109,11 +89,7 @@
       "format": "16:9",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-six",
@@ -123,11 +99,7 @@
       "format": "9:16",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-seven",
@@ -137,11 +109,7 @@
       "format": "16:9",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     },
     {
       "id": "project-eight",
@@ -151,11 +119,7 @@
       "format": "16:9",
       "vimeo": "",
       "loop": "",
-      "thumb": "",
-      "brand": "",
-      "logo": "",
-      "accent": "",
-      "cover": ""
+      "thumb": ""
     }
   ],
   "packages": [
