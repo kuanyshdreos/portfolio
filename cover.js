@@ -51,7 +51,10 @@
     const accent = p.accent || PALETTE[hash % PALETTE.length];
     const [frame, logo] = await Promise.all([loadImg(resolve(p.thumb)), loadImg(resolve(p.logo))]);
     const brand = (p.brand || p.title || '').trim();
-    const sub = p.brand ? (p.title || '') : (p.category || '');
+    // second line: the work's title when a brand is the headline, otherwise its short description
+    // (the category is already in the pill, so it isn't repeated here)
+    const clip = t => (t = String(t || '').trim()).length > 64 ? t.slice(0, 61).replace(/\s+\S*$/, '') + '…' : t;
+    const sub = clip(p.brand ? p.title : p.desc);
     const vertical = p.format === '9:16';
 
     // background: blurred frame, or an accent gradient
