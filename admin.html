@@ -17,7 +17,9 @@
   header{position:sticky;top:0;z-index:10;background:rgba(244,244,242,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
     display:flex;align-items:center;gap:12px;padding:12px 20px;flex-wrap:wrap}
   header h1{font-size:16px;font-weight:600;margin-right:6px}
-  .tabs{display:flex;gap:4px;background:#e9e9e6;border-radius:10px;padding:3px}
+  .tabs{display:flex;gap:4px;background:#e9e9e6;border-radius:10px;padding:3px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:none}
   .tabs button{padding:6px 12px;border-radius:8px;color:var(--muted)}
   .tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
   .grow{flex:1}
@@ -69,6 +71,8 @@
 
   .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .chip{display:inline-flex;align-items:center;gap:6px;background:#f0f0ed;border-radius:20px;padding:4px 6px 4px 11px;font-size:13px}
+  .tips{background:#f6f8f4;border:1px solid #e3eadc;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  .tips ul{margin:6px 0 0 18px;line-height:1.5;color:#444}
   .chip.pbadge{padding:5px 12px;border:1px solid transparent;cursor:pointer}
   .chip.pbadge.on{background:var(--ink);color:#fff}
   .chip button{width:18px;height:18px;border-radius:50%;color:var(--muted)}
@@ -172,7 +176,18 @@
     </div>
     <div class="box">
       <h2>Как я работаю — техника, софт, процесс</h2>
-      <p class="hint" style="margin:-6px 0 12px">Отдельная страница в окне цен (кнопка «как я работаю»). Карточки группируются по полю «группа». Фото лучше на светлом или прозрачном фоне. Если пусто — кнопки на сайте не будет.</p>
+      <p class="hint" style="margin:-6px 0 8px">Отдельная страница в окне цен (кнопка «как я работаю»). Позиции одной группы стоят рядом, группа подписана плашкой на карточке. Если пусто — кнопки на сайте не будет.</p>
+      <div class="tips">
+        <b>Какие фото выбирать, чтобы смотрелось дорого</b>
+        <ul>
+          <li><b>Лучше всего — PNG без фона</b> (предмет вырезан): сайт сам поставит его по центру на светлую плитку с отступами. Вырезать фон бесплатно: remove.bg или «Удалить фон» в Canva.</li>
+          <li>Подойдёт и обычное фото <b>на однотонном фоне</b> (белый, серый, бежевый) — оно заполнит карточку целиком.</li>
+          <li>Формат <b>квадрат или 4:3</b>, от 800 px по ширине, предмет крупно и по центру.</li>
+          <li>Один стиль у всех: либо все без фона, либо все на одинаковом фоне. Не смешивайте фото «со стола» и студийные.</li>
+          <li>Без фото тоже нормально — будет аккуратная плитка с первой буквой названия.</li>
+          <li>Подпись короткая: что даёт клиенту («4K, плавная картинка», «чистый звук на улице»), а не характеристики.</li>
+        </ul>
+      </div>
       <div class="row2">
         <label class="f"><span>Заголовок</span><input type="text" data-site="gearTitle" placeholder="как я работаю"></label>
         <label class="f"><span>Вступление (пара строк о процессе)</span><input type="text" data-site="gearIntro" placeholder="Снимаю, монтирую и сдаю за 3–5 дней…"></label>
@@ -187,7 +202,18 @@
   <section class="view" id="v-clients">
     <div class="box">
       <h2>Бренды, с которыми вы работали</h2>
-      <p class="hint" style="margin:-6px 0 14px">Бегущая строка внизу главного экрана. Логотипы на сайте становятся белыми, поэтому лучше PNG с прозрачным фоном. Без логотипа покажется название. Если выбрать работу — клик по логотипу откроет этот ролик.</p>
+      <p class="hint" style="margin:-6px 0 8px">Бегущая строка внизу главного экрана. Если выбрать работу — клик по логотипу откроет этот ролик. Без логотипа покажется название текстом.</p>
+      <div class="tips">
+        <b>Какие логотипы загружать, чтобы строка смотрелась ровно</b>
+        <ul>
+          <li><b>PNG или SVG с прозрачным фоном.</b> Сайт перекрашивает логотип в белый силуэт — поэтому логотип на белом/цветном прямоугольнике станет просто белым прямоугольником.</li>
+          <li>Нет файла без фона — скачайте с сайта бренда (раздел «пресса/медиа»), найдите на brandfetch.com или вырежьте фон на remove.bg.</li>
+          <li>Лучше <b>горизонтальная версия</b> логотипа (знак + надпись в строку), без лишних полей вокруг. Квадратный значок тоже можно — он будет меньше.</li>
+          <li>Размер: от 400 px по ширине. Больше 800 не нужно — админка сама уменьшит.</li>
+          <li>3–8 брендов смотрятся лучше всего. Ставьте первыми самых узнаваемых.</li>
+          <li>Логотипы чужих брендов показывайте только тех, с кем реально работали.</li>
+        </ul>
+      </div>
       <div id="clientsList"></div>
       <button class="btn sm" id="addClient">+ бренд</button>
     </div>
@@ -219,6 +245,14 @@
     </div>
     <div class="box">
       <h2>Заставка и иконка</h2>
+      <div class="tips">
+        <b>Рекомендации</b>
+        <ul>
+          <li><b>Логотип</b>: PNG или SVG <b>с прозрачным фоном, светлый</b> (белый или цветной) — сайт тёмный. Горизонтальный, от 400 px. Тёмный логотип на тёмном фоне будет не виден.</li>
+          <li><b>Иконка вкладки</b>: квадрат от 256×256, простой знак или первая буква — мелкие детали во вкладке не различить.</li>
+          <li><b>Кнопки входа</b>: коротко, 1–3 слова. Можно одну кнопку «смотреть работы» — тогда звук включится по умолчанию.</li>
+        </ul>
+      </div>
       <div class="row2">
         <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Логотип вместо шара (на заставке и в углу сайта). PNG с прозрачным фоном</span>
           <div class="inline"><div class="brandprev" id="logoPrev"></div><button class="btn sm" id="pickSiteLogo">Загрузить</button><button class="btn sm" id="clearSiteLogo">Вернуть шар</button></div></div>
@@ -491,6 +525,14 @@ function renderEditor(){
     <div class="coverbox">
       <div><canvas id="coverPrev" width="1200" height="900"></canvas><div class="hint">так карточка выглядит в спирали</div></div>
       <div style="flex:1;min-width:0">
+        <div class="tips" style="margin-bottom:10px">
+          <b>Обложка — главное, что видит клиент</b>
+          <ul>
+            <li><b>Дизайн</b> (по умолчанию): берёт кадр из Vimeo. Выберите в Vimeo яркий кадр с лицом/продуктом крупно — он станет фоном. Логотип бренда — PNG без фона, светлый.</li>
+            <li><b>Своё фото</b>: 1200×900 (4:3), JPG/PNG. Важное — ближе к центру: края на маленьких карточках обрезаются.</li>
+            <li>Название — коротко (1–3 слова): длинные уменьшаются, чтобы влезть.</li>
+          </ul>
+        </div>
         <label class="f"><span>Обложка в спирали</span>
           <div class="seg" id="cmode"><button data-m="design" class="${p.cover ? '' : 'on'}">Дизайн (бренд + лого)</button><button data-m="photo" class="${p.cover ? 'on' : ''}">Своё фото</button></div></label>
         ${p.cover ? `
@@ -1023,6 +1065,10 @@ async function setGearImg(i, file){
   c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   const blob = await new Promise(r => c.toBlob(r, 'image/png'));
   const g = D.gear[i];
+  // transparent PNG (cut-out object) → shown centered with padding; regular photo → fills the card
+  const px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  let clear = 0; for (let k = 3; k < px.length; k += 16) if (px[k] < 200) clear++;
+  g.fit = clear > px.length / 16 * .04 ? 'contain' : 'cover';
   if (pending.has(g.img)) pending.delete(g.img);
   g.img = stage(`gear/${slug(g.name || 'item')}-${Date.now().toString(36)}.png`, new File([blob], 'gear.png', { type: 'image/png' }));
   renderGear(); changed();
