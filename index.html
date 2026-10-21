@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Портфолио</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{ --bg:#0a0a0a; --fg:#f2f2f2; --paper:#f7f7f7; --ink:#111; --muted:#8b8b8b; --accent:#3cff8f;
+    --ease:cubic-bezier(.7,0,.2,1); --out:cubic-bezier(.2,.8,.2,1); --g1:#3cff8f; --g2:#1fd1ff; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);
+    font-family:"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-transform:lowercase}
+  a{color:inherit;text-decoration:none}
+  /* interface is lowercase by style; your own texts from the admin keep their capitals */
+  #tagline,#aboutTxt,#pkgs,#list .row h3,#list .row small,#player .meta,.mail{text-transform:none}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-transform:inherit}
+
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(#1a1a1a 1px,transparent 1px),linear-gradient(90deg,#1a1a1a 1px,transparent 1px);
+    background-size:44px 44px}
+  canvas#gl{position:fixed;inset:0;display:block;cursor:grab;touch-action:none;transition:filter .6s var(--ease),opacity .5s}
+  canvas#gl.drag{cursor:grabbing}
+
+  @keyframes blurIn{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:blur(0)}}
+  .blur-in{animation:blurIn .9s var(--out) both}
+
+  .orb{width:64px;height:64px;border-radius:50%;flex:none;display:block;
+    background:radial-gradient(circle at 70% 25%, var(--g2), transparent 45%),
+               radial-gradient(circle at 30% 30%, var(--g1), transparent 55%),
+               radial-gradient(circle at 50% 85%, #fff 0, #555 25%, #111 60%);
+    box-shadow:0 0 40px -6px var(--g1);animation:hue 8s linear infinite}
+  .orb.sm{width:38px;height:38px;box-shadow:0 0 18px -4px var(--g1)}
+  @keyframes hue{to{filter:hue-rotate(360deg)}}
+
+  /* ---------- intro ---------- */
+  #intro{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    transition:opacity .9s var(--ease),filter .9s var(--ease),visibility .9s}
+  #intro.gone{opacity:0;filter:blur(20px);visibility:hidden}
+  #intro p{text-align:center;font-size:17px;line-height:1.15}
+  #intro .enter{display:flex;gap:28px;font-size:13px;color:var(--muted);opacity:0;filter:blur(10px);transition:opacity .8s,filter .8s}
+  #intro.loaded .enter{opacity:1;filter:none}
+  #intro .enter button:hover{color:var(--fg)}
+  #intro .pct{position:absolute;bottom:24px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* ---------- top bar ---------- */
+  header{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;pointer-events:none}
+  header>*{pointer-events:auto}
+  #filters{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+  #filters::-webkit-scrollbar{display:none}
+  #filters button{transition:color .3s}
+  #filters button.on,#filters button:hover{color:var(--fg)}
+  #filters i{width:4px;height:4px;border-radius:50%;background:#555;flex:none}
+  .right{display:flex;gap:8px;align-items:center}
+  #viewBtn{display:none;background:#222;border-radius:22px;height:34px;padding:0 12px;font-size:13px}
+  #menuBtn{background:#fff;color:var(--ink);border-radius:22px;height:34px;padding:0 12px 0 14px;display:flex;align-items:center;gap:8px;font-size:13px}
+  #menuBtn .dot{width:6px;height:6px;border-radius:50%;background:var(--ink)}
+
+  /* ---------- white panels that grow out of a dot ---------- */
+  #shade{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .6s,visibility .6s}
+  body.panel-open #shade{opacity:1;visibility:visible}
+  body.panel-open canvas#gl,body.playing canvas#gl{filter:blur(8px) brightness(.6)}
+  .panel{position:fixed;top:16px;right:16px;bottom:16px;width:min(380px,calc(100vw - 32px));z-index:31;background:var(--paper);color:var(--ink);
+    border-radius:18px;padding:22px 26px;display:flex;flex-direction:column;
+    clip-path:circle(0 at var(--ox,calc(100% - 26px)) var(--oy,18px));transition:clip-path .8s var(--ease)}
+  .panel.on{clip-path:circle(150% at var(--ox,calc(100% - 26px)) var(--oy,18px))}
+  .panel.wide{width:min(560px,calc(100vw - 32px))}
+  .panel .close{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:8px;font-size:13px;z-index:2}
+  .panel .close b{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:400;transition:transform .4s var(--ease)}
+  .panel .close:hover b{transform:rotate(90deg)}
+  .panel .fade{opacity:0;filter:blur(12px);transform:translateY(14px);transition:opacity .6s,filter .6s,transform .6s var(--out)}
+  .panel.on .fade{opacity:1;filter:none;transform:none}
+  #menu .links{margin:auto 0}
+  #menu .links a{display:block;font-size:clamp(44px,6vw,58px);line-height:1.02;letter-spacing:-.04em;transition:opacity .6s,filter .6s,transform .6s var(--out),color .3s}
+  #menu .links:hover a{color:#bbb} #menu .links a:hover{color:var(--ink)}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+  .socials{display:flex;gap:6px}
+  .socials a{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:10px;transition:transform .3s}
+  .socials a:hover{transform:scale(1.12)}
+  #about .txt{margin:auto 0;font-size:clamp(18px,2vw,22px);line-height:1.25}
+  #about .txt p+p{margin-top:14px;color:#666;font-size:14px}
+
+  /* price */
+  #price .scroll{overflow-y:auto;margin:40px -6px 12px;padding:0 6px;flex:1}
+  #price h2{font-size:clamp(40px,5vw,54px);letter-spacing:-.04em;font-weight:400;line-height:1;margin-bottom:18px}
+  .pkg{border-top:1px solid #ddd;padding:16px 0}
+  .pkg .top{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+  .pkg .name{font-size:13px;color:#777}
+  .pkg .cost{font-size:28px;letter-spacing:-.03em;line-height:1.1;text-align:right;margin-left:auto}
+  .pkg ul{list-style:none;margin:8px 0 6px;font-size:15px;line-height:1.45}
+  .pkg li::before{content:"— ";color:#aaa}
+  .pkg .note{font-size:12px;color:#888}
+  .order{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:22px;padding:9px 16px;font-size:13px;transition:transform .3s}
+  .order:hover{transform:scale(1.04)}
+
+
+  /* ---------- corner buttons ---------- */
+  #priceBtn{position:fixed;left:14px;bottom:14px;z-index:12;width:104px;height:104px;border-radius:50%}
+  #priceBtn svg{position:absolute;inset:0;animation:rot 14s linear infinite}
+  #priceBtn text{fill:var(--fg);font-size:11.5px;letter-spacing:3px}
+  #priceBtn .ic{position:absolute;inset:30px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--ink);display:grid;place-items:center;font-size:20px;transition:transform .4s var(--ease)}
+  #priceBtn:hover .ic{transform:scale(1.12) rotate(-6deg)}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  #soundBtn{position:fixed;right:18px;bottom:18px;z-index:12;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:13px}
+
+  /* ---------- list view ---------- */
+  #list{position:fixed;inset:0;z-index:5;overflow-y:auto;padding:84px 18px 150px;opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s}
+  body.listview #list{opacity:1;visibility:visible}
+  body.listview canvas#gl{opacity:0;pointer-events:none}
+  .row{display:flex;gap:14px;align-items:center;padding:10px 0;border-top:1px solid #222}
+  .row:last-child{border-bottom:1px solid #222}
+  .row .th{width:104px;aspect-ratio:4/3;border-radius:8px;overflow:hidden;flex:none;background:#1a1a1a}
+  .row .th>*{width:100%;height:100%;object-fit:cover;display:block}
+  .row .th img[src=""]{opacity:0}
+  .row h3{font-size:22px;font-weight:500;letter-spacing:-.02em}
+  .row small{color:var(--muted);font-size:12px}
+
+  /* ---------- fullscreen player ---------- */
+  /* the frame takes the video's own shape (16:9, 9:16…); title, time and progress sit under it */
+  #player{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+    background:rgba(6,6,6,.88);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);
+    opacity:0;visibility:hidden;transition:opacity .5s var(--out),visibility .5s}
+  #player.on{opacity:1;visibility:visible}
+  #player .pbg{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(60px) saturate(1.3);opacity:.32;pointer-events:none}
+  #player .wrap{position:relative;display:flex;flex-direction:column;gap:12px;transform:translateY(24px) scale(.96);filter:blur(14px);opacity:0;
+    transition:transform .7s var(--out),filter .6s var(--out),opacity .6s var(--out)}
+  #player.on .wrap{transform:none;filter:none;opacity:1}
+  #player .frame{position:relative;overflow:hidden;border-radius:14px;background:#000;box-shadow:0 40px 120px rgba(0,0,0,.65)}
+  #player .media,#player .media>*{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;object-fit:cover}
+  #player .hit{position:absolute;inset:0;z-index:2;cursor:none}
+  #player.novideo .hit,#player.novideo .bar{cursor:default}
+  #player .big{position:absolute;left:50%;top:50%;z-index:3;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;
+    background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center;font-size:24px;pointer-events:none;
+    opacity:0;transform:scale(.7);transition:opacity .3s,transform .4s var(--out)}
+  #player.paused .big{opacity:1;transform:none}
+  /* our own end screen: the video's preview frame, covering whatever Vimeo shows */
+  #player .poster{position:absolute;inset:0;z-index:1;background:#000 center/cover no-repeat;opacity:0;pointer-events:none;transition:opacity .4s ease}
+  #player.ended .poster{opacity:1}
+  #player .under{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;color:#fff}
+  #player .meta{min-width:0}
+  #player .meta b{display:block;font-size:20px;font-weight:500;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .meta span{display:block;font-size:13px;color:#9a9a9a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .ctl{display:flex;align-items:center;gap:8px;flex:none}
+  #player .time{font-size:12px;color:#9a9a9a;font-variant-numeric:tabular-nums}
+  #player .ib{height:34px;min-width:34px;padding:0 12px;border-radius:17px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;display:grid;place-items:center;transition:background .3s}
+  #player .ib:hover{background:rgba(255,255,255,.2)}
+  #player .bar{position:relative;height:18px;display:flex;align-items:center;cursor:none;touch-action:none}
+  #player .bar i{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.2);border-radius:3px}
+  #player .bar u{position:absolute;left:0;height:3px;width:0;background:#fff;border-radius:3px}
+  #player .x{position:absolute;top:16px;right:16px;z-index:4;width:40px;height:40px;border-radius:50%;background:#fff;color:var(--ink);font-size:18px;display:grid;place-items:center;transition:transform .4s var(--ease)}
+  #player .x:hover{transform:rotate(90deg)}
+  #player .empty{position:absolute;left:0;right:0;bottom:0;padding:14px;text-align:center;color:#ddd;font-size:13px;z-index:1;
+    background:linear-gradient(transparent,rgba(0,0,0,.6))}
+
+  #player.instant,#player.instant *{transition:none!important}
+  #player.morph .wrap{opacity:0;transform:none;filter:none;transition:none}
+  #player .wrap{transition:transform .7s var(--out),filter .6s var(--out),opacity .45s ease}
+  /* white dot that breathes while loading, then stretches into the video frame */
+  #ghost{position:fixed;z-index:56;pointer-events:none;display:none;background:#fff;
+    transition:left .62s var(--ease),top .62s var(--ease),width .62s var(--ease),height .62s var(--ease),border-radius .62s var(--ease),opacity .45s ease}
+  #ghost.on{display:block}
+  #ghost.instant{transition:none}
+  #ghost.fade{opacity:0}
+  #ghost.pulse{animation:dotPulse .9s ease-in-out infinite}
+  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.9);opacity:.45}}
+  #ghost img{display:none}
+
+  /* circle wipe between spiral and player; white one carries a small loader with the work's name */
+  #wipe{position:fixed;inset:0;z-index:55;pointer-events:none;clip-path:circle(0 at var(--x,50%) var(--y,50%));
+    transition:clip-path .75s var(--ease),opacity .5s ease;display:grid;place-items:center}
+  #wipe.in{clip-path:circle(150vmax at var(--x,50%) var(--y,50%));pointer-events:auto}
+  #wipe.out{opacity:0}
+  #wipe.instant{transition:none}
+
+  #cur{position:fixed;left:0;top:0;z-index:70;pointer-events:none;padding:5px 11px;border-radius:20px;font-size:14px;
+    background:var(--accent);color:var(--ink);transform:translate(-50%,-50%) scale(0);transition:transform .3s var(--out);white-space:nowrap}
+  #cur.on{transform:translate(-50%,-50%) scale(1)}
+  #toast{position:fixed;left:50%;top:22px;z-index:80;transform:translate(-50%,-20px);background:#fff;color:var(--ink);font-size:13px;padding:8px 14px;border-radius:20px;opacity:0;transition:opacity .3s,transform .4s var(--out);pointer-events:none}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:700px){
+    header{flex-wrap:wrap}
+    #filters{order:3;width:100%}
+    #viewBtn{display:block}
+    #list{padding-top:110px}
+    #priceBtn{width:84px;height:84px} #priceBtn .ic{inset:24px}
+    #player .wrap{gap:10px}
+    #player .meta b{font-size:17px}
+    #player .x{top:max(12px, env(safe-area-inset-top));right:12px}
+  }
+  @media (hover:none){ #player .hit,#player .bar{cursor:auto} #cur{display:none} }
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="orb"></div>
+  <p id="tagline"></p>
+  <div class="enter"><button data-sound="1">войти со звуком</button><button data-sound="0">без звука</button></div>
+  <div class="pct">0%</div>
+</div>
+
+<canvas id="gl"></canvas>
+
+<header>
+  <a href="#" class="orb sm" id="home" aria-label="home"></a>
+  <nav id="filters"></nav>
+  <div class="right"><button id="viewBtn">список</button><button id="menuBtn">меню <span class="dot"></span></button></div>
+</header>
+
+<div id="shade"></div>
+<nav id="menu" class="panel">
+  <button class="close" data-close>закрыть <b>×</b></button>
+  <div class="links">
+    <a class="fade" href="#" data-go="works" style="transition-delay:.25s">работы</a>
+    <a class="fade" href="#" data-go="about" style="transition-delay:.3s">обо мне</a>
+    <a class="fade" href="#" data-go="price" style="transition-delay:.35s">цены</a>
+    <a class="fade" href="#" data-go="contact" style="transition-delay:.4s">контакты</a>
+  </div>
+  <div class="foot fade" style="transition-delay:.45s"><a class="mail"></a><div class="socials"></div></div>
+</nav>
+<section id="about" class="panel">
+  <button class="close" data-close>закрыть <b>×</b></button>
+  <div class="txt fade" id="aboutTxt" style="transition-delay:.25s"></div>
+  <div class="foot fade" style="transition-delay:.4s"><a class="mail"></a><div class="socials"></div></div>
+</section>
+<section id="price" class="panel wide">
+  <button class="close" data-close>закрыть <b>×</b></button>
+  <div class="scroll fade" style="transition-delay:.25s"><h2>цены</h2><div id="pkgs"></div></div>
+  <div class="foot fade" style="transition-delay:.4s"><a class="order" id="orderBtn" target="_blank" rel="noopener">написать →</a><div class="socials"></div></div>
+</section>
+
+<section id="list"></section>
+
+<button id="priceBtn" aria-label="цены">
+  <svg viewBox="0 0 104 104"><defs><path id="circ" d="M52,52 m-40,0 a40,40 0 1,1 80,0 a40,40 0 1,1 -80,0"/></defs>
+    <text><textPath href="#circ" id="priceText"></textPath></text></svg>
+  <span class="ic">✦</span>
+</button>
+<button id="soundBtn" aria-label="звук">♪</button>
+
+<section id="player">
+  <div class="pbg"></div>
+  <div class="wrap">
+    <div class="frame"><div class="media"></div><div class="poster"></div><div class="hit"></div><div class="big">▶</div></div>
+    <div class="bar"><i></i><u></u></div>
+    <div class="under">
+      <div class="meta"><b></b><span></span></div>
+      <div class="ctl"><span class="time"></span><button class="ib" id="muteBtn" aria-label="звук">🔊</button></div>
+    </div>
+  </div>
+  <button class="x" aria-label="закрыть">×</button>
+</section>
+<div id="wipe"></div>
+<div id="ghost"><img alt=""></div>
+<div id="cur"></div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="cover.js?v=3"></script>
+<script>
+/* Контент сайта лежит в data.json — редактируйте его через admin.html */
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const isVid = s => /\.(mp4|webm|mov)(\?|#|$)/i.test(s || '');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const body = document.body;
+const hues = [150, 190, 280, 320, 20, 60, 230, 110];
+const isTouch = matchMedia('(hover:none)').matches;
+
+let DATA, SITE, PROJECTS = [], CATS = [], filter = 'all';
+
+// ---------- vimeo helpers ----------
+function vimeoInfo(url){
+  if (!url) return null;
+  const m = String(url).match(/vimeo\.com\/(?:video\/|channels\/[^/]+\/|groups\/[^/]+\/videos\/)?(\d+)(?:\/([0-9a-f]{6,}))?/i);
+  if (!m) return null;
+  const h = (String(url).match(/[?&]h=([0-9a-f]+)/i) || [])[1] || m[2] || '';
+  return { id: m[1], hash: h };
+}
+async function vimeoMeta(url){
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch('https://vimeo.com/api/oembed.json?width=1280&url=' + encodeURIComponent(url), { signal: ctl.signal });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+// ---------- data ----------
+async function loadData(){
+  if (new URLSearchParams(location.search).has('draft')) {
+    try {
+      const d = JSON.parse(localStorage.getItem('portfolio-draft'));
+      // loops picked in the admin but not published yet live as blob: links while the admin tab is open
+      if (d) { DRAFT_BLOBS = JSON.parse(localStorage.getItem('portfolio-draft-blobs') || '{}'); return d; }
+    } catch {}
+  }
+  const r = await fetch('data.json', { cache: 'no-cache' });
+  return r.json();
+}
+
+// ---------- tiny UI sounds ----------
+let audio = null, soundOn = false;
+function blip(freq = 660, dur = .06, vol = .04){
+  if (!soundOn) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + dur);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + dur);
+  } catch {}
+}
+document.addEventListener('pointerover', e => {
+  const el = e.target.closest('button,a');
+  if (el && !el.contains(e.relatedTarget)) blip(880, .04, .025);
+});
+function setSound(on){ soundOn = on; $('#soundBtn').textContent = on ? '♪' : '×'; }
+$('#soundBtn').onclick = () => { setSound(!soundOn); blip(520, .1); };
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1600); }
+
+// local files picked in the admin but not published yet (draft preview only)
+let DRAFT_BLOBS = {};
+const U = path => DRAFT_BLOBS[path] || path;
+const thumbOf = p => p._coverURL || U(p.thumb) || '';
+
+// ---------- three.js spiral ----------
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, .1, 100);
+const group = new THREE.Group(); scene.add(group);
+
+// straight vertical helix as wide as the screen; ~3 rows visible, each row sloping with the pitch
+const SPIN = .18;                            // idle rotation speed (radians per second)
+const TURN = .7, RISE = .42;                // angle step and height step per card (~9 per turn)
+// radius / card scale depend on the screen: wide spiral on desktop, narrow one on a portrait phone
+const LAY = { R: 5.8, cs: 1 };
+const BAND = .3;                            // visible height of the spiral (0..1 of half-screen) before cards fade out
+const FOCUS = .42;                          // radius of the crisp zone around screen center
+// every card is 4:3 like the original; any video (16:9, 9:16) is center-cropped into it
+const SIZE = { h: [3.0, 2.25], v: [3.0, 2.25] };
+function bentPlane(w, h){
+  const g = new THREE.PlaneGeometry(w, h, 24, 12);
+  return g;
+}
+const GEO = { h: bentPlane(...SIZE.h), v: bentPlane(...SIZE.v) };
+
+const vert = `
+  varying vec2 vUv; uniform float uBend;
+  void main(){
+    vUv = uv; vec3 p = position;
+    p.z -= p.x * p.x * uBend;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+  }`;
+// cover-fit, pixel mosaic + blur when out of focus, rounded corners;
+// cover and hover video are cross-faded (uMix), and a freshly loaded cover fades in from dark (uReveal)
+const frag = `
+  varying vec2 vUv;
+  uniform sampler2D map, vmap;
+  uniform float uPix, uBlur, uOpacity, uDim, uTexAspect, uVAspect, uMix, uReveal; uniform vec2 uSize;
+  float box(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.)) + min(max(q.x, q.y), 0.) - r; }
+  vec2 fit(vec2 uv, float ta, float ca){
+    if (ta > ca) uv.x = (uv.x - .5) * ca / ta + .5; else uv.y = (uv.y - .5) * ta / ca + .5;
+    return uv;
+  }
+  void main(){
+    float ca = uSize.x / uSize.y;
+    // cards turn continuously; on the far side we see the back face, so un-mirror it here
+    vec2 uv = gl_FrontFacing ? vUv : vec2(1. - vUv.x, vUv.y);
+    if (uPix > 0.) { vec2 g = vec2(uPix, uPix / ca); uv = (floor(uv * g) + .5) / g; }
+    vec2 uc = fit(uv, uTexAspect, ca), uvv = fit(uv, uVAspect, ca);
+    vec3 c = vec3(0.), v = vec3(0.);
+    for (int x = -2; x <= 2; x++) for (int y = -2; y <= 2; y++) {
+      vec2 o = vec2(float(x), float(y)) * uBlur;
+      c += texture2D(map, clamp(uc + o, .001, .999)).rgb;
+      if (uMix > .001) v += texture2D(vmap, clamp(uvv + o, .001, .999)).rgb;
+    }
+    c = mix(c, v, uMix) / 25.;
+    float d = box((vUv - .5) * uSize, uSize * .5, .12);
+    float a = 1. - smoothstep(-.01, .01, d);
+    gl_FragColor = vec4(c * uDim * mix(.08, 1., uReveal), a * uOpacity);
+  }`;
+
+// per project: a 4:3 cover texture (uploaded photo or generated design) + optional loop video for hover
+let loaded = 0, toLoad = 0;
+const loadImg = src => new Promise(r => { if (!src) return r(null); const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+function setMap(p, tex, aspect){ p._mats.forEach(m => { m.uniforms.map.value = tex; m.uniforms.uTexAspect.value = aspect; }); }
+function prepareMedia(p){
+  p._mats = [];
+  p._rev = 0; p._mix = 0; p._ready = false;
+  const blank = document.createElement('canvas'); blank.width = 4; blank.height = 3;
+  blank.getContext('2d').fillStyle = '#151515'; blank.getContext('2d').fillRect(0, 0, 4, 3);
+  p._tex = new THREE.CanvasTexture(blank); p._tex.minFilter = THREE.LinearFilter;
+  p._aspect = 4 / 3;
+  toLoad++;
+  let done = false; const finish = () => { if (!done) { done = true; loaded++; } };
+  setTimeout(finish, 8000);   // never let one slow file block the intro
+
+  (async () => {
+    let src = p.cover ? await loadImg(U(p.cover)) : null;
+    if (!src) src = await makeCover(p, U);
+    p._tex.image = src; p._tex.needsUpdate = true;
+    p._aspect = src.width / src.height;
+    setMap(p, p._tex, p._aspect);
+    p._ready = true;                              // frame loop fades the cover in
+    p._coverURL = src instanceof HTMLCanvasElement ? src.toDataURL('image/jpeg', .82) : src.src;
+    // the list may have been drawn before the cover was ready
+    $$('#list .row').filter(r => r.dataset.id === p.id).forEach(r => {
+      const el = $('.th img, .th video', r);
+      if (el) el.tagName === 'IMG' ? (el.src = p._coverURL) : (el.poster = p._coverURL);
+    });
+    finish();
+  })();
+
+  if (isVid(p.loop)) {
+    const v = document.createElement('video');
+    Object.assign(v, { muted: true, loop: true, playsInline: true, preload: 'auto', crossOrigin: 'anonymous' });
+    v.setAttribute('playsinline', '');
+    v.addEventListener('loadeddata', () => {
+      p._vidAspect = v.videoWidth / v.videoHeight;
+      p._mats.forEach(m => m.uniforms.uVAspect.value = p._vidAspect);
+    }, { once: true });
+    v.addEventListener('error', () => { p._video = null; }, { once: true });
+    v.src = U(p.loop);
+    p._video = v;
+    p._vidTex = new THREE.VideoTexture(v); p._vidTex.minFilter = THREE.LinearFilter;
+  }
+}
+
+let cards = [], COUNT = 0, span = 1;
+function buildSpiral(){
+  cards.forEach(m => { group.remove(m); m.material.dispose(); });
+  PROJECTS.forEach(p => p._mats = []);
+  cards = [];
+  const list = visibleProjects();
+  if (!list.length) { COUNT = 0; return; }
+  // whole copies keep the order at the wrap seam; 48+ cards make the helix long enough
+  // that cards wrap from bottom to top far outside the screen, never in view
+  COUNT = list.length * Math.max(1, Math.ceil(48 / list.length));
+  span = COUNT * TURN;
+  for (let i = 0; i < COUNT; i++) {
+    const p = list[i % list.length];
+    const kind = p.format === '9:16' ? 'v' : 'h';
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: vert, fragmentShader: frag, transparent: true, side: THREE.DoubleSide, depthWrite: false,
+      uniforms: { map: { value: p._tex }, vmap: { value: p._vidTex || p._tex }, uPix: { value: 0 }, uBlur: { value: 0 }, uOpacity: { value: 1 }, uDim: { value: 1 },
+        uBend: { value: .045 }, uTexAspect: { value: p._aspect }, uVAspect: { value: p._vidAspect || 16 / 9 },
+        uMix: { value: p._mix }, uReveal: { value: p._rev }, uSize: { value: new THREE.Vector2(...SIZE[kind]) } },
+    });
+    p._mats.push(mat);
+    const m = new THREE.Mesh(GEO[kind], mat);
+    m.userData = { p, base: i * TURN, hover: 0, focus: 1, dist: 9, t: 0, baseBend: mat.uniforms.uBend.value };
+    group.add(m); cards.push(m);
+  }
+}
+const visibleProjects = () => PROJECTS.filter(p => filter === 'all' || p.category === filter);
+
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // landscape: the whole wide spiral in view. portrait phone: a narrower spiral and the camera placed
+  // so a card crossing the center fills ~75% of the screen width
+  const tan = Math.tan(THREE.MathUtils.degToRad(22.5));
+  if (camera.aspect < 1) {
+    LAY.R = 3.4; LAY.cs = .72;
+    camera.position.z = LAY.R + (3 * LAY.cs) / (.75 * 2 * tan * camera.aspect);
+  } else {
+    LAY.R = 5.8; LAY.cs = 1;
+    camera.position.z = 16.5;
+  }
+  camera.updateProjectionMatrix();
+  if (player.classList.contains('on')) fitFrame();
+}
+
+// input: wheel screws along the spiral, drag rotates it (with inertia)
+let scroll = 0, scrollT = 0, rotX = 0, rotXT = 0, dragging = false, lastX = 0, lastY = 0, moved = 0, flingV = 0;
+const mouse = new THREE.Vector2(-9, -9);
+const setMouse = e => mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+addEventListener('wheel', e => { if (!blocked() && !body.classList.contains('listview')) scrollT += e.deltaY * .004; }, { passive: true });
+canvas.addEventListener('pointerdown', e => {
+  if (blocked()) return;
+  dragging = true; moved = 0; flingV = 0; lastX = e.clientX; lastY = e.clientY; canvas.classList.add('drag'); setMouse(e);
+});
+addEventListener('pointermove', e => {
+  setMouse(e);
+  cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px';
+  if (!dragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+  if (e.pointerType === 'touch') { const d = (dx - dy) * .009; scrollT += d; flingV = d; }
+  else { scrollT += dx * .007; flingV = dx * .007; rotXT = Math.max(-.4, Math.min(.4, rotXT + dy * .003)); }
+});
+addEventListener('pointerup', () => { if (dragging) { dragging = false; canvas.classList.remove('drag'); } });
+
+const ray = new THREE.Raycaster();
+function pick(){
+  if (!cards.length) return null;
+  ray.setFromCamera(mouse, camera);
+  const h = ray.intersectObjects(cards).find(h => h.object.material.uniforms.uOpacity.value > .4);
+  return h ? h.object : null;
+}
+
+// click: the card flies toward you while a white circle grows from the click, then the player opens
+let flying = null, flyT = 0, spin = .3;
+canvas.addEventListener('click', async e => {
+  if (moved >= 6 || blocked() || flying) return;
+  const m = pick(); if (!m) return;
+  blip(440, .12);
+  morphOpen(m.userData.p, e.clientX, e.clientY);
+});
+
+let hovered = null, centerCard = null, playingVideo = null;
+function setHovered(m){
+  if (m === hovered) return;
+  hovered = m;
+  canvas.style.cursor = m ? 'pointer' : '';
+  // hover-play: the hovered project's cover cross-fades into its loop; the frame loop does the fading
+  // and pauses a loop only once it has fully faded back to the cover
+  const p = m && m.userData.p, v = p && p._video;
+  PROJECTS.forEach(q => { if (q !== p) q._hoverOn = false; });
+  playingVideo = v || null;
+  if (v) { p._hoverOn = true; v.play().catch(() => {}); }
+  if (m) blip(520 + (PROJECTS.indexOf(m.userData.p) % 8) * 40);
+}
+
+const v3 = new THREE.Vector3();
+const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+let t0 = performance.now(), introSpin = 8, prevScroll = 0, speed = 0;
+function frame(now){
+  // never negative (first rAF timestamp can predate t0) and never huge (tab was hidden) —
+  // otherwise the time-based easing below would overshoot and blow up
+  const dt = Math.max(0, Math.min(.05, (now - t0) / 1000)); t0 = Math.max(t0, now);
+  const idle = !dragging && !blocked() && !flying;
+  // idle spin eases to a stop while a card is hovered, and picks up again when the cursor leaves
+  const E = k => 1 - Math.pow(1 - k, dt * 60);   // per-frame factor tuned at 60fps → time-based
+  spin += ((idle && !hovered ? SPIN : 0) - spin) * E(.06);
+  if (idle) { scrollT += dt * spin + (hovered ? 0 : flingV * dt * 60); flingV *= hovered ? 0 : Math.pow(.92, dt * 60); }
+  introSpin += (0 - introSpin) * E(.035);
+  scroll += (scrollT - scroll) * E(.08);
+  rotX += (rotXT - rotX) * E(.07);
+  // real angular speed (rad/s); the slow idle spin stays crisp, only fast scrolling/throws smear
+  const vel = (scroll - prevScroll) / Math.max(dt, 1 / 240); prevScroll = scroll;
+  speed += (Math.min(1, Math.max(0, Math.abs(vel) - .8) * .45) - speed) * E(.2);
+
+  group.rotation.x = .12 + rotX + mouse.y * .04;
+  group.rotation.z = mouse.x * -.02;
+  group.updateMatrixWorld();
+
+  // smooth per-project fades: cover appearing after load, cover ↔ loop on hover
+  PROJECTS.forEach(p => {
+    if (!p._mats) return;
+    p._rev += ((p._ready ? 1 : 0) - p._rev) * E(.05);
+    p._mix += ((p._hoverOn && p._video && p._video.readyState >= 2 ? 1 : 0) - p._mix) * E(.09);
+    if (!p._hoverOn && p._mix < .02 && p._video && !p._video.paused) p._video.pause();
+    p._mats.forEach(m => { m.uniforms.uReveal.value = p._rev; m.uniforms.uMix.value = p._mix; });
+  });
+
+
+  let best = null;
+  cards.forEach(m => {
+    const d = m.userData, u = m.material.uniforms;
+    const t = ((d.base - scroll - introSpin) % span + span) % span - span / 2;
+    d.t = t;
+    const y = -t / TURN * RISE;
+    m.position.set(Math.sin(t) * LAY.R, y, Math.cos(t) * LAY.R);
+    m.rotation.y = t;                                    // continuous turn, no 180° snap at the sides
+    d.hover += ((m === hovered ? 1 : 0) - d.hover) * E(.15);
+    let s = 1 + d.hover * .08;
+    m.scale.setScalar(s * LAY.cs);
+
+    v3.copy(m.position).applyMatrix4(group.matrixWorld).project(camera);
+    // cards going round the back count as far away, ramping smoothly instead of switching at the side
+    d.dist = Math.hypot(v3.x * camera.aspect, v3.y) + (1 - smooth(-.35, .35, Math.cos(t))) * 3;
+    if (!best || d.dist < best.userData.dist) best = m;
+
+    // crisp in the central zone (about two cards), blur + mosaic elsewhere and while spinning fast
+    const goal = m === hovered || m === flying ? 0 : Math.max(smooth(FOCUS, FOCUS + .35, d.dist), speed * .75);
+    d.focus += (goal - d.focus) * E(.14);
+    const off = d.focus;
+    // mosaic starts with very fine cells (barely visible) and coarsens gradually — no visible jump
+    u.uPix.value = off > .15 ? 160 - (off - .15) / .85 * 125 : 0;
+    u.uBlur.value = off * .009;
+    u.uDim.value = 1 - off * .35;
+    u.uBend.value = d.baseBend + speed * .05;
+    const edge = Math.max(0, Math.min(1, (span / 2 - Math.abs(t)) / 4));
+    // short visible spiral like the reference: cards dissolve toward the top and bottom of the screen
+    // the lower edge cuts in closer to the center, so only the top two rows stay
+    // visible window is symmetric around the screen center
+    const band = 1 - smooth(BAND, BAND + .3, Math.abs(v3.y));
+    u.uOpacity.value = m === flying ? 0 : edge * band;
+    m.renderOrder = m === flying ? 10000 : Math.round(Math.cos(t) * 1000);   // fine-grained so overlaps don't flicker
+  });
+  centerCard = best;
+
+
+  setHovered(blocked() || body.classList.contains('listview') || isTouch ? null : pick());
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ---------- filters ----------
+function renderFilters(){
+  const all = ['all', ...CATS];
+  $('#filters').innerHTML = all.map((c, i) => `${i ? '<i></i>' : ''}<button data-c="${esc(c)}" class="${c === filter ? 'on' : ''}">${c === 'all' ? 'все' : esc(c)}</button>`).join('');
+  $$('#filters button').forEach(b => b.onclick = () => setFilter(b.dataset.c, true));
+}
+function setFilter(c, push){
+  filter = c === 'all' || CATS.includes(c) ? c : 'all';
+  $$('#filters button').forEach(b => b.classList.toggle('on', b.dataset.c === filter));
+  buildSpiral(); renderList();
+  introSpin = 3;                                   // little re-shuffle spin
+  if (push) setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter));
+}
+
+// ---------- list ----------
+function renderList(){
+  const list = visibleProjects();
+  $('#list').innerHTML = list.map(p => `
+    <a href="#" class="row" data-id="${esc(p.id)}"><div class="th">${isVid(p.loop) ? `<video src="${esc(U(p.loop))}" poster="${esc(thumbOf(p))}" muted loop playsinline preload="none"></video>` : `<img src="${esc(thumbOf(p))}" alt="">`}</div>
+      <div><small>${esc(p.category)}</small><h3>${esc(p.title)}</h3><small>${esc(p.desc)}</small></div></a>`).join('')
+    || '<p style="color:#777;padding:20px 0">пока пусто</p>';
+  $$('#list .row').forEach(r => {
+    const p = PROJECTS.find(x => x.id === r.dataset.id), v = $('video', r);
+    r.onclick = e => { e.preventDefault(); morphOpen(p, e.clientX, e.clientY); };
+    if (v) { r.onpointerenter = () => v.play().catch(() => {}); r.onpointerleave = () => v.pause(); }
+  });
+}
+function setView(v){
+  body.classList.toggle('listview', v === 'list');
+  $('#viewBtn').textContent = v === 'list' ? 'спираль' : 'список';
+}
+$('#viewBtn').onclick = () => setView(body.classList.contains('listview') ? 'spiral' : 'list');
+
+// ---------- panels (menu / about / price) grow out of a dot ----------
+function openPanel(id, from){
+  closePanels(true);
+  const pnl = $(id), r = pnl.getBoundingClientRect(), d = (from || $('#menuBtn .dot')).getBoundingClientRect();
+  pnl.style.setProperty('--ox', (d.left + d.width / 2 - r.left) + 'px');
+  pnl.style.setProperty('--oy', (d.top + d.height / 2 - r.top) + 'px');
+  pnl.classList.add('on');
+  body.classList.add('panel-open');
+  blip(300, .18, .05);
+}
+function closePanels(keepShade){
+  $$('.panel').forEach(p => p.classList.remove('on'));
+  if (!keepShade) body.classList.remove('panel-open');
+}
+$('#menuBtn').onclick = () => $('#menu').classList.contains('on') ? closePanels() : openPanel('#menu');
+$('#shade').onclick = () => closePanels();
+$$('[data-close]').forEach(b => b.onclick = () => closePanels());
+$$('#menu [data-go]').forEach(a => a.onclick = e => {
+  e.preventDefault();
+  const g = a.dataset.go;
+  if (g === 'works') closePanels();
+  if (g === 'about') openPanel('#about');
+  if (g === 'price') openPanel('#price');
+  if (g === 'contact') { closePanels(); window.open(SITE.contact || 'mailto:' + SITE.email, '_blank'); }
+});
+$('#priceBtn').onclick = () => openPanel('#price', $('#priceBtn .ic'));
+$('#home').onclick = e => { e.preventDefault(); closeAll(); setFilter('all', true); };
+
+// ---------- fullscreen player: own mp4 or Vimeo, controlled from the cursor (tap on phones) ----------
+const player = $('#player'), cur = $('#cur');
+const ctrl = { kind: 'none', paused: true, dur: 0, t: 0, muted: false, iframe: null, video: null, p: null };
+function vpost(method, value){
+  if (!ctrl.iframe || !ctrl.iframe.contentWindow) return;
+  ctrl.iframe.contentWindow.postMessage(JSON.stringify(value === undefined ? { method } : { method, value }), 'https://player.vimeo.com');
+}
+addEventListener('message', e => {
+  if (!ctrl.iframe || e.source !== ctrl.iframe.contentWindow) return;
+  let d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+  if (!d || !(d.event || d.method)) return;
+  ctrl.alive = true;
+  if (d.event === 'ready') vSubscribe();
+  if (d.event === 'play') ctrl.paused = false;
+  if (d.event === 'pause') ctrl.paused = true;
+  if (d.event === 'ended' || d.event === 'finish') finishVideo();
+  // vimeo reports progress as "playProgress" (older protocol) or "timeupdate"
+  if ((d.event === 'timeupdate' || d.event === 'playProgress') && d.data) {
+    ctrl.dur = d.data.duration; ctrl.t = d.data.seconds; setBar(d.data.percent);
+    // stop just before the end, so Vimeo's own end screen ("more from…") never shows
+    if (ctrl.dur && ctrl.t >= ctrl.dur - .35 && !ctrl.ended) finishVideo();
+  }
+  if (d.event === 'volumechange' && d.data) ctrl.muted = !!d.data.muted || d.data.volume === 0;
+  if (d.method === 'getDuration' && d.value) ctrl.dur = d.value;
+  if (d.method === 'getPaused' && typeof d.value === 'boolean') ctrl.paused = d.value;
+  if (d.method === 'getMuted' && typeof d.value === 'boolean') ctrl.muted = d.value;
+  updateUI();
+});
+function vSubscribe(){
+  ['play', 'pause', 'ended', 'finish', 'timeupdate', 'playProgress', 'volumechange'].forEach(ev => vpost('addEventListener', ev));
+  vpost('getDuration'); vpost('getPaused'); vpost('getMuted');
+}
+const fmt = s => !isFinite(s) ? '0:00' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setBar(f){ $('#player .bar u').style.width = Math.max(0, Math.min(1, f || 0)) * 100 + '%'; }
+function updateUI(){
+  player.classList.toggle('paused', ctrl.kind !== 'none' && ctrl.paused);
+  $('#player .time').textContent = ctrl.dur ? `${fmt(ctrl.t)} / ${fmt(ctrl.dur)}` : '';
+  $('#muteBtn').textContent = ctrl.muted ? '🔇' : '🔊';
+  updateCur();
+}
+function playerAspect(){
+  const p = ctrl.p;
+  if (!p) return 16 / 9;
+  if (ctrl.kind === 'none') return 4 / 3;      // no video yet: show the 4:3 cover whole
+  if (p._videoAspect) return p._videoAspect;
+  return p.format === '9:16' ? 9 / 16 : 16 / 9;
+}
+// frame = the video's own shape, as big as fits above the title/progress row
+function fitFrame(){
+  const vw = innerWidth, vh = innerHeight, mobile = vw < 700, a = playerAspect();
+  const padX = mobile ? 12 : 80, top = mobile ? 64 : 64, under = mobile ? 84 : 96;
+  const w = Math.min(vw - padX * 2, (vh - top - under) * a), h = w / a;
+  const f = $('#player .frame');
+  f.style.width = w + 'px'; f.style.height = h + 'px';
+  $('#player .wrap').style.width = w + 'px';
+  $('#player .wrap').style.marginTop = (top - under) / 2 + 'px';
+}
+function openPlayer(p){
+  if (!p) return;
+  closePanels();
+  ctrl.p = p; ctrl.paused = true; ctrl.dur = 0; ctrl.t = 0; ctrl.muted = false; ctrl.ended = false; ctrl.iframe = ctrl.video = null; p._videoAspect = 0;
+  player.classList.remove('ended');
+  $('#player .poster').style.backgroundImage = `url("${U(p.thumb) || thumbOf(p)}")`;
+  const media = $('#player .media'), vi = vimeoInfo(p.vimeo);
+  $('#player .pbg').style.backgroundImage = `url("${U(p.thumb) || thumbOf(p)}")`;
+  setBar(0);
+  if (vi) {
+    ctrl.kind = 'vimeo';
+    // with sound: opening is a click, so the browser allows it; if it still refuses, the first tap unmutes
+    const q = new URLSearchParams({ api: 1, autoplay: 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
+    if (vi.hash) q.set('h', vi.hash);
+    media.innerHTML = `<iframe src="https://player.vimeo.com/video/${vi.id}?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    ctrl.iframe = $('iframe', media);
+    // the player inside the iframe starts listening some time after load: keep subscribing until it answers
+    ctrl.alive = false;
+    const frameRef = ctrl.iframe;
+    const retry = setInterval(() => {
+      if (ctrl.iframe !== frameRef || ctrl.alive) return clearInterval(retry);
+      vSubscribe();
+    }, 400);
+    setTimeout(() => clearInterval(retry), 15000);
+    vimeoMeta(p.vimeo).then(m => { if (m && ctrl.p === p && m.width) { p._videoAspect = m.width / m.height; fitFrame(); } });
+  } else if (isVid(p.video || p.loop)) {
+    ctrl.kind = 'mp4';
+    media.innerHTML = `<video src="${esc(p.video || U(p.loop))}" playsinline></video>`;
+    const v = ctrl.video = $('video', media);
+    v.onloadedmetadata = () => { p._videoAspect = v.videoWidth / v.videoHeight; fitFrame(); };
+    v.ontimeupdate = () => { ctrl.dur = v.duration; ctrl.t = v.currentTime; setBar(v.currentTime / v.duration); updateUI(); };
+    v.onplay = () => { ctrl.paused = false; updateUI(); };
+    v.onpause = () => { ctrl.paused = true; updateUI(); };
+    v.onended = finishVideo;
+    v.onvolumechange = () => { ctrl.muted = v.muted; updateUI(); };
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+  } else {
+    ctrl.kind = 'none';
+    media.innerHTML = `<img src="${esc(thumbOf(p))}" alt=""><div class="empty">видео скоро будет</div>`;
+  }
+  $('#player .meta b').textContent = p.title;
+  $('#player .meta span').textContent = p.desc || '';
+  $('#player .bar').style.visibility = ctrl.kind === 'none' ? 'hidden' : '';
+  $('#muteBtn').style.display = ctrl.kind === 'none' ? 'none' : '';
+  player.classList.toggle('novideo', ctrl.kind === 'none');
+  fitFrame(); updateUI();
+  player.classList.add('on'); body.classList.add('playing');
+  if (playingVideo) { setHovered(null); }
+  setHash('p/' + encodeURIComponent(p.id));
+}
+function closePlayer(){
+  if (!player.classList.contains('on')) return;
+  if (ctrl.video) ctrl.video.pause();
+  vpost('pause');
+  player.classList.remove('on', 'paused'); body.classList.remove('playing'); cur.classList.remove('on');
+  setTimeout(() => { if (!player.classList.contains('on')) { $('#player .media').innerHTML = ''; ctrl.iframe = ctrl.video = null; } }, 600);
+  setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter));
+}
+function setMuted(m){
+  ctrl.muted = m;
+  if (ctrl.kind === 'mp4') ctrl.video.muted = m;
+  if (ctrl.kind === 'vimeo') { vpost('setMuted', m); if (!m) vpost('setVolume', 1); }
+  updateUI();
+}
+// play always comes with sound
+// end of video: back to the start, paused, our own poster on top; play starts it again
+function finishVideo(){
+  ctrl.ended = true; ctrl.paused = true;
+  if (ctrl.kind === 'mp4') { ctrl.video.pause(); ctrl.video.currentTime = 0; }
+  if (ctrl.kind === 'vimeo') { vpost('pause'); vpost('setCurrentTime', 0); }
+  setBar(0); ctrl.t = 0;
+  player.classList.add('ended');
+  updateUI();
+}
+function toggle(){
+  if (ctrl.ended) { ctrl.ended = false; player.classList.remove('ended'); }
+  if (ctrl.paused) {
+    if (ctrl.kind === 'mp4') ctrl.video.play().catch(() => {});
+    if (ctrl.kind === 'vimeo') vpost('play');
+    setMuted(false);
+  } else {
+    if (ctrl.kind === 'mp4') ctrl.video.pause();
+    if (ctrl.kind === 'vimeo') vpost('pause');
+  }
+  ctrl.paused = !ctrl.paused;
+  updateUI();
+}
+function seek(f){
+  f = Math.max(0, Math.min(.98, f));
+  if (ctrl.ended) { ctrl.ended = false; player.classList.remove('ended'); }
+  if (ctrl.kind === 'mp4' && ctrl.video.duration) ctrl.video.currentTime = f * ctrl.video.duration;
+  if (ctrl.kind === 'vimeo' && ctrl.dur) vpost('setCurrentTime', f * ctrl.dur);
+  setBar(f);
+}
+function updateCur(){
+  if (!cur.classList.contains('on') || cur.dataset.mode === 'seek') return;
+  cur.textContent = ctrl.paused ? 'смотреть' : 'пауза';
+}
+player.addEventListener('pointermove', e => {
+  const onHit = e.target.closest('.hit'), onBar = e.target.closest('.bar');
+  if (ctrl.kind === 'none' || !(onHit || onBar)) { cur.classList.remove('on'); return; }
+  cur.dataset.mode = onBar ? 'seek' : '';
+  cur.textContent = onBar ? 'перемотка' : ctrl.paused ? 'смотреть' : 'пауза';
+  cur.classList.add('on');
+});
+player.addEventListener('pointerleave', () => cur.classList.remove('on'));
+$('#player .hit').onclick = () => { if (ctrl.kind !== 'none') toggle(); };
+// click or drag on the progress bar (drag works with a finger too)
+{
+  const bar = $('#player .bar');
+  const at = e => { const r = bar.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
+  let scrub = false;
+  bar.addEventListener('pointerdown', e => { scrub = true; bar.setPointerCapture(e.pointerId); seek(at(e)); });
+  bar.addEventListener('pointermove', e => { if (scrub) seek(at(e)); });
+  bar.addEventListener('pointerup', () => { scrub = false; });
+}
+$('#muteBtn').onclick = () => setMuted(!ctrl.muted);
+// closing: a black circle grows from where you clicked, the player is removed under it, then it fades
+async function closeWithWipe(x = innerWidth / 2, y = innerHeight / 2){
+  if (!player.classList.contains('on') || wipeBusy) return;
+  if (ctrl.video) ctrl.video.pause();
+  vpost('pause');
+  await wipeIn('#0a0a0a', x, y);
+  player.classList.add('instant');
+  closePlayer();
+  requestAnimationFrame(() => player.classList.remove('instant'));
+  wipeOut();
+}
+$('#player .x').onclick = e => closeWithWipe(e.clientX, e.clientY);
+// click on the dark area around the video closes it
+player.addEventListener('click', e => { if (e.target === player || e.target.classList.contains('pbg')) closeWithWipe(e.clientX, e.clientY); });
+
+// ---------- circle transition (same idea as the menu) ----------
+const wipe = $('#wipe');
+let wipeBusy = false;
+function wipeIn(color, x, y){
+  wipeBusy = true;
+  wipe.classList.add('instant'); wipe.classList.remove('in', 'out');
+  wipe.style.background = color;
+  wipe.style.setProperty('--x', x + 'px'); wipe.style.setProperty('--y', y + 'px');
+  void wipe.offsetWidth;                       // apply the start state before animating
+  wipe.classList.remove('instant'); wipe.classList.add('in');
+  return new Promise(r => setTimeout(r, 620));
+}
+function wipeOut(){
+  wipe.classList.add('out');
+  setTimeout(() => { wipe.classList.add('instant'); wipe.classList.remove('in', 'out'); wipeBusy = false; }, 560);
+}
+
+// ---------- opening: the clicked cover grows into the player frame ----------
+const ghost = $('#ghost');
+let morphing = false;
+function placeGhost(r, radius){
+  Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', borderRadius: radius + 'px' });
+}
+// black circle from the click (like the menu) → a white dot breathes in the middle while the video loads
+// → the dot stretches into the video frame → black fades away and the player is there
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function morphOpen(p, x, y){
+  if (morphing || blocked() || wipeBusy) return;
+  morphing = true;
+  const circle = wipeIn('#0a0a0a', x, y);
+  await sleep(320);
+  ghost.classList.add('instant'); ghost.classList.remove('fade');
+  placeGhost({ left: innerWidth / 2 - 6, top: innerHeight / 2 - 6, width: 12, height: 12 }, 6);
+  ghost.classList.add('on', 'pulse');
+  void ghost.offsetWidth;
+  ghost.classList.remove('instant');
+  await circle;
+  player.classList.add('morph');                // player is opened under the black, content hidden
+  openPlayer(p);
+  await sleep(380);                             // gives the video a moment to start loading
+  ghost.classList.remove('pulse');
+  placeGhost($('#player .frame').getBoundingClientRect(), 14);
+  await sleep(640);
+  player.classList.remove('morph');
+  ghost.classList.add('fade');
+  wipeOut();
+  await sleep(460);
+  ghost.classList.remove('on', 'fade');
+  morphing = false;
+}
+// screen rectangle of a card in the spiral
+function cardRect(m){
+  const g = m.geometry.parameters, pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) =>
+    new THREE.Vector3(sx * g.width / 2, sy * g.height / 2, 0).applyMatrix4(m.matrixWorld).project(camera));
+  const xs = pts.map(v => (v.x + 1) / 2 * innerWidth), ys = pts.map(v => (1 - v.y) / 2 * innerHeight);
+  const left = Math.min(...xs), top = Math.min(...ys);
+  return { left, top, width: Math.max(...xs) - left, height: Math.max(...ys) - top };
+}
+
+// ---------- deep links: #p/<id> opens a video, #c/<category> filters ----------
+function setHash(h){ history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); }
+function applyHash(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('c/')) setFilter(h.slice(2));
+  if (h.startsWith('p/')) { const p = PROJECTS.find(x => x.id === h.slice(2)); if (p) openPlayer(p); }
+}
+
+function blocked(){
+  return !$('#intro').classList.contains('gone') || player.classList.contains('on') || body.classList.contains('panel-open');
+}
+function closeAll(){ closePanels(); closePlayer(); }
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (player.classList.contains('on')) closeWithWipe(); else closeAll(); }
+  if (e.key === ' ' && player.classList.contains('on') && ctrl.kind !== 'none') { e.preventDefault(); toggle(); }
+});
+
+// ---------- boot ----------
+(async () => {
+  try { DATA = await loadData(); }
+  catch { DATA = { site: {}, categories: [], projects: [], packages: [] }; }
+  SITE = DATA.site || {};
+  CATS = (DATA.categories || []).filter(Boolean);
+  PROJECTS = (DATA.projects || []).filter(p => p && p.title).map((p, i) => ({ ...p, id: p.id || 'work-' + (i + 1) }));
+
+  document.title = `${SITE.name || 'Портфолио'} ✲ Портфолио`;
+  // visitor stats (countries, visits per day/week/month) — Cloudflare Web Analytics, no cookies;
+  // skipped in admin preview so your own checks don't count
+  if (SITE.cfToken && !new URLSearchParams(location.search).has('draft')) {
+    const s = document.createElement('script');
+    s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    s.setAttribute('data-cf-beacon', JSON.stringify({ token: SITE.cfToken }));
+    document.head.appendChild(s);
+  }
+  $('#tagline').innerHTML = SITE.tagline || '';
+  $('#aboutTxt').innerHTML = (SITE.about || []).map(t => `<p>${esc(t)}</p>`).join('');
+  $$('.mail').forEach(a => { a.textContent = SITE.email || ''; a.href = 'mailto:' + (SITE.email || ''); });
+  $$('.socials').forEach(d => d.innerHTML = (SITE.socials || []).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(''));
+  $('#priceText').textContent = (SITE.priceText || 'цены • пакеты • ').repeat(3);
+  $('#orderBtn').href = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#pkgs').innerHTML = (DATA.packages || []).map(k => `
+    <div class="pkg"><div class="top"><span class="name">${esc(k.name)}</span><span class="cost">${esc(k.price)}</span></div>
+      <ul>${(k.items || []).map(i => `<li>${esc(i)}</li>`).join('')}</ul>${k.note ? `<div class="note">${esc(k.note)}</div>` : ''}</div>`).join('');
+
+  // always take the current thumbnail from Vimeo, so changing it in Vimeo updates the site;
+  // the saved one is only a fallback if Vimeo doesn't answer
+  await Promise.all(PROJECTS.map(async p => {
+    if (!p.vimeo) return;
+    const m = await vimeoMeta(p.vimeo);
+    if (!m) return;
+    if (m.thumbnail_url) p.thumb = m.thumbnail_url;
+    if (!p.format) p.format = m.height > m.width ? '9:16' : '16:9';
+  }));
+  PROJECTS.forEach(prepareMedia);
+
+  renderFilters(); buildSpiral(); renderList(); resize();
+  addEventListener('resize', resize);
+
+  let shown = 0;
+  const iv = setInterval(() => {
+    shown = Math.min(toLoad ? loaded / toLoad : 1, shown + .02);
+    $('#intro .pct').textContent = Math.round(shown * 100) + '%';
+    if (shown >= 1) { clearInterval(iv); $('#intro').classList.add('loaded'); }
+  }, 30);
+  $$('#intro .enter button').forEach(b => b.onclick = () => {
+    setSound(b.dataset.sound === '1');
+    blip(330, .25, .06);
+    $('#intro').classList.add('gone');
+    introSpin = 8;
+    ['header', '#priceBtn', '#soundBtn'].forEach((s, k) => { const el = $(s); el.style.animationDelay = .3 + k * .1 + 's'; el.classList.add('blur-in'); });
+    applyHash();
+  });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

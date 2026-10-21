@@ -1,0 +1,156 @@
+{
+  "site": {
+    "name": "Your Name",
+    "tagline": "монтажёр и моушн-дизайнер<br>ваш город",
+    "about": [
+      "Пара предложений о себе: кто вы и что делаете.",
+      "Клиенты, инструменты, опыт — коротко."
+    ],
+    "email": "you@example.com",
+    "contact": "https://t.me/username",
+    "socials": [
+      {
+        "label": "ig",
+        "url": "https://instagram.com/"
+      },
+      {
+        "label": "vm",
+        "url": "https://vimeo.com/"
+      },
+      {
+        "label": "tg",
+        "url": "https://t.me/username"
+      }
+    ],
+    "priceText": "цены • пакеты • ",
+    "cfToken": ""
+  },
+  "categories": [
+    "рилсы",
+    "реклама",
+    "клипы"
+  ],
+  "projects": [
+    {
+      "id": "qfitness",
+      "title": "qfitness",
+      "desc": "Рилс для фитнес-клуба.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "https://vimeo.com/1238058732",
+      "loop": "",
+      "thumb": "https://i.vimeocdn.com/video/2215057420-5e9241376a230a8142561e1a9e3590d4ccd959fe75a0c08a6bf5c616e3b600f7-d_1280?region=us"
+    },
+    {
+      "id": "project-one",
+      "title": "Project One",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "реклама",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-two",
+      "title": "Project Two",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-three",
+      "title": "Project Three",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "клипы",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-four",
+      "title": "Project Four",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-five",
+      "title": "Project Five",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "реклама",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-six",
+      "title": "Project Six",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-seven",
+      "title": "Project Seven",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "реклама",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    },
+    {
+      "id": "project-eight",
+      "title": "Project Eight",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "клипы",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": ""
+    }
+  ],
+  "packages": [
+    {
+      "name": "start",
+      "price": "$000",
+      "items": [
+        "5 роликов с монтажом",
+        "субтитры",
+        "1 правка"
+      ],
+      "note": "срок — 5 дней"
+    },
+    {
+      "name": "pro",
+      "price": "$000",
+      "items": [
+        "20 роликов с монтажом",
+        "цветокоррекция",
+        "звук и музыка",
+        "2 правки"
+      ],
+      "note": "самый популярный"
+    },
+    {
+      "name": "custom",
+      "price": "по запросу",
+      "items": [
+        "реклама, клипы, большие проекты"
+      ],
+      "note": "обсудим задачу"
+    }
+  ]
+}
