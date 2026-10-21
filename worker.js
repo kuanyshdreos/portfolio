@@ -6,7 +6,10 @@
 //   in a Cloudflare D1 database (binding DB). No IP addresses or personal data are stored.
 
 const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/stats$/;
-const BOT_UA = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|vkshare|headless|lighthouse/i;
+// click kinds the site may report: video opened, price popup, package opened, "order" pressed,
+// contact from the menu, brand logo, category filter
+const HIT_KINDS = new Set(['video', 'price', 'pkg', 'order', 'contact', 'client', 'filter', 'gear']);
+const BOT_UA =/bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|vkshare|headless|lighthouse/i;
 
 // compare without leaking how many characters matched
 function same(a, b) {
@@ -61,10 +64,15 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // video opened in the player: the site reports it here (navigator.sendBeacon)
+    // what visitors click, reported by the site as "kind|item" (navigator.sendBeacon)
     if (url.pathname === '/hit' && request.method === 'POST') {
-      const id = (await request.text().catch(() => '')).trim();
-      if (/^[a-z0-9-]{1,64}$/.test(id)) ctx.waitUntil(count(env, request, 'video', id).catch(() => {}));
+      const body = (await request.text().catch(() => '')).slice(0, 200);
+      let [kind, ...rest] = body.split('|');
+      let item = rest.join('|');
+      if (!rest.length) { item = kind; kind = 'video'; }            // older pages sent just the video id
+      item = item.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 64);
+      if (HIT_KINDS.has(kind) && (kind !== 'video' || /^[a-z0-9-]{1,64}$/.test(item)))
+        ctx.waitUntil(count(env, request, kind, item).catch(() => {}));
       return new Response(null, { status: 204 });
     }
 

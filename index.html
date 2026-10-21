@@ -103,6 +103,14 @@
   .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
   .pcard{background:#fff;border-radius:18px;padding:20px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:196px;
     border:1px solid #ececec;transition:transform .45s var(--out),box-shadow .45s var(--out),border-color .3s}
+  .pcard{position:relative}
+  .badge{position:absolute;top:14px;right:14px;font-size:11px;font-weight:600;letter-spacing:.02em;padding:5px 11px;border-radius:20px;
+    background:linear-gradient(135deg,var(--g1),var(--g2));color:#0a0a0a;overflow:hidden;box-shadow:0 8px 22px -8px var(--g1)}
+  .badge::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.65) 50%,transparent 70%);
+    transform:translateX(-120%);animation:shine 2.8s ease-in-out infinite}
+  @keyframes shine{60%,100%{transform:translateX(120%)}}
+  .dbadge{position:static;display:inline-block;margin-bottom:12px}
+  .pcard.hot{box-shadow:0 26px 60px -24px rgba(60,255,143,.55)}
   .pcard:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(0,0,0,.08);border-color:#ddd}
   .pcard .nm{font-size:12px;color:#888;letter-spacing:.06em;text-transform:uppercase}
   .pcard .cost{font-size:34px;letter-spacing:-.04em;line-height:1.05;margin-top:auto}
@@ -113,6 +121,23 @@
   .pcard.hot .nm,.pcard.hot .per{color:#aaa}
   .pcard.hot .vids{background:var(--accent);color:#111}
   .pcard.hot .more{color:#fff}
+  /* «как я работаю»: equipment & software cards grouped by kind */
+  .gearlink{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:10px;padding:16px 18px;border-radius:16px;
+    background:#fff;border:1px solid #ececec;font-size:15px;text-align:left;transition:transform .45s var(--out),box-shadow .45s var(--out)}
+  .gearlink:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(0,0,0,.07)}
+  .gearlink small{display:block;font-size:12px;color:#888;margin-top:2px}
+  .gearlink .ico{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:18px;flex:none}
+  .ggroup{margin-top:22px}
+  .ggroup h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#888;font-weight:500;margin-bottom:10px}
+  .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .gitem{background:#fff;border:1px solid #ececec;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+    opacity:0;transform:translateY(12px);animation:gIn .6s var(--out) forwards}
+  @keyframes gIn{to{opacity:1;transform:none}}
+  .gitem .pic{aspect-ratio:4/3;background:#f2f2f0 center/contain no-repeat;border-bottom:1px solid #f0f0ee}
+  .gitem .pic.none{display:grid;place-items:center;font-size:30px;color:#cfcfcf}
+  .gitem .t{padding:12px 14px}
+  .gitem b{display:block;font-size:14px;font-weight:600}
+  .gitem span{display:block;font-size:12px;color:#888;margin-top:3px;line-height:1.35}
   .back{font-size:13px;color:#666;margin-bottom:18px;display:inline-flex;gap:6px}
   .back:hover{color:var(--ink)}
   .dcost{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 14px}
@@ -315,7 +340,9 @@
   <div class="mcard">
     <button class="mx" aria-label="закрыть">×</button>
     <div class="mview" id="pmList"><h2>цены</h2><p class="sub">выберите пакет — нажмите, чтобы увидеть подробности</p><div class="pgrid" id="pkgs"></div>
+      <button class="gearlink" id="gearLink" hidden><span><b>как я работаю</b><small>техника, софт и процесс</small></span><span class="ico">⌁</span></button>
       <a class="order" id="orderBtn" target="_blank" rel="noopener">обсудить свой проект →</a></div>
+    <div class="mview hide" id="pmGear"></div>
     <div class="mview hide" id="pmDetail"></div>
   </div>
 </div>
@@ -350,7 +377,7 @@
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="cover.js?v=3"></script>
+<script src="cover.js?v=4"></script>
 <script>
 /* Контент сайта лежит в data.json — редактируйте его через admin.html */
 
@@ -761,7 +788,7 @@ function setFilter(c, push){
   $$('#filters button').forEach(b => b.classList.toggle('on', b.dataset.c === filter));
   buildSpiral(); renderList();
   introSpin = 3;                                   // little re-shuffle spin
-  if (push) setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter));
+  if (push) { setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter)); track('filter', filter); }
 }
 
 // ---------- list ----------
@@ -806,20 +833,27 @@ $$('#menu [data-go]').forEach(a => a.onclick = e => {
   if (g === 'works') closePanels();
   if (g === 'about') openPanel('#about');
   if (g === 'price') { closePanels(); openPrice(); }
-  if (g === 'contact') { closePanels(); window.open(SITE.contact || 'mailto:' + SITE.email, '_blank'); }
+  if (g === 'contact') { track('contact', 'меню'); closePanels(); window.open(SITE.contact || 'mailto:' + SITE.email, '_blank'); }
 });
 $('#priceBtn').onclick = () => openPrice();
+
+// ---------- what visitors click: counted per day/country by worker.js (not in the admin preview) ----------
+function track(kind, item = ''){
+  if (new URLSearchParams(location.search).has('draft') || !navigator.sendBeacon) return;
+  try { navigator.sendBeacon('/hit', new Blob([kind + '|' + String(item).slice(0, 60)], { type: 'text/plain' })); } catch {}
+}
 
 // ---------- price popup ----------
 const priceModal = $('#priceModal');
 function openPrice(){
   showPriceView('#pmList');
   priceModal.classList.add('on'); body.classList.add('pricing');
+  track('price');
   blip(300, .18, .05);
 }
 function closePrice(){ priceModal.classList.remove('on'); body.classList.remove('pricing'); }
 function showPriceView(id){
-  ['#pmList', '#pmDetail'].forEach(v => $(v).classList.toggle('hide', v !== id));
+  ['#pmList', '#pmDetail', '#pmGear'].forEach(v => $(v).classList.toggle('hide', v !== id));
   const el = $(id); el.classList.add('enter'); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
   $('.mcard', priceModal).scrollTop = 0;
 }
@@ -828,6 +862,7 @@ function showPackage(i){
   const contact = SITE.contact || 'mailto:' + (SITE.email || '');
   $('#pmDetail').innerHTML = `
     <button class="back">← все пакеты</button>
+    ${k.badge ? `<span class="badge dbadge">${esc(k.badge)}</span>` : ''}
     <h2>${esc(k.name)}</h2>
     <div class="dcost"><b>${esc(k.price)}</b>${k.period ? `<span>${esc(k.period)}</span>` : ''}</div>
     ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
@@ -836,6 +871,8 @@ function showPackage(i){
     ${k.note ? `<p class="dnote">${esc(k.note)}</p>` : ''}
     <a class="order" href="${esc(contact)}" target="_blank" rel="noopener">заказать «${esc(k.name)}» →</a>`;
   $('#pmDetail .back').onclick = () => showPriceView('#pmList');
+  $('#pmDetail .order').onclick = () => track('order', k.name);
+  track('pkg', k.name);
   showPriceView('#pmDetail');
   blip(520, .08);
 }
@@ -951,9 +988,7 @@ function openPlayer(p){
   if (playingVideo) { setHovered(null); }
   setHash('p/' + encodeURIComponent(p.id));
   hintDone = true;
-  if (!new URLSearchParams(location.search).has('draft') && navigator.sendBeacon) {
-    try { navigator.sendBeacon('/hit', new Blob([p.id], { type: 'text/plain' })); } catch {}
-  }
+  track('video', p.id);
 }
 function closePlayer(){
   if (!player.classList.contains('on')) return;
@@ -1162,7 +1197,26 @@ addEventListener('keydown', e => {
   $$('.socials').forEach(d => d.innerHTML = (SITE.socials || []).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(''));
   $('#priceText').textContent = (SITE.priceText || 'цены • пакеты • ').repeat(3);
   $('#orderBtn').href = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#orderBtn').onclick = () => track('order', 'свой проект');
   // brands strip: two copies of the list so the loop is seamless
+  // «как я работаю» inside the price popup: only when there is something to show
+  const gear = (DATA.gear || []).filter(g => g && g.name);
+  if (gear.length) {
+    $('#gearLink').hidden = false;
+    $('#gearLink').onclick = () => {
+      const groups = [...new Set(gear.map(g => g.group || 'другое'))];
+      let k = 0;
+      $('#pmGear').innerHTML = `<button class="back">← все пакеты</button><h2>${esc(SITE.gearTitle || 'как я работаю')}</h2>
+        ${SITE.gearIntro ? `<p class="dtext">${esc(SITE.gearIntro)}</p>` : ''}
+        ${groups.map(gr => `<div class="ggroup"><h4>${esc(gr)}</h4><div class="ggrid">${gear.filter(g => (g.group || 'другое') === gr).map(g => `
+          <div class="gitem" style="animation-delay:${(k++) * .05}s">
+            <div class="pic ${g.img ? '' : 'none'}" style="${g.img ? `background-image:url('${esc(U(g.img))}')` : ''}">${g.img ? '' : '✦'}</div>
+            <div class="t"><b>${esc(g.name)}</b>${g.note ? `<span>${esc(g.note)}</span>` : ''}</div></div>`).join('')}</div></div>`).join('')}`;
+      $('#pmGear .back').onclick = () => showPriceView('#pmList');
+      showPriceView('#pmGear');
+      track('gear');
+    };
+  }
   const clients = (DATA.clients || []).filter(c => c && (c.name || c.logo));
   if (clients.length) {
     const one = clients.map((c, i) => `<div class="cl ${c.work ? 'link' : ''}" data-i="${i}" title="${esc(c.name)}">${
@@ -1174,11 +1228,13 @@ addEventListener('keydown', e => {
     body.classList.add('has-clients');
     $$('#clients .cl.link').forEach(el => el.onclick = e => {
       const p = PROJECTS.find(x => x.id === clients[+el.dataset.i].work);
+      track('client', clients[+el.dataset.i].name || '');
       if (p) morphOpen(p, e.clientX, e.clientY);
     });
   }
   $('#pkgs').innerHTML = (DATA.packages || []).map((k, i) => `
     <button class="pcard ${k.hot ? 'hot' : ''}" data-i="${i}">
+      ${k.badge ? `<span class="badge">${esc(k.badge)}</span>` : ''}
       <span class="nm">${esc(k.name)}</span>
       ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
       <span class="cost">${esc(k.price)}</span>

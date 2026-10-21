@@ -9,4 +9,12 @@
     // every request goes through worker.js first, so /admin can't be served around the password check
     "run_worker_first": true
   }
+
+  // ---- statistics (admin → «Статистика») ----
+  // 1) Cloudflare → Storage & databases → D1 → Create → name: portfolio-stats
+  // 2) copy its Database ID, paste it below instead of PASTE-ID-HERE
+  // 3) remove the two slashes in front of the 3 lines below (keep the comma before "d1_databases")
+  // ,"d1_databases": [
+  //   { "binding": "DB", "database_name": "portfolio-stats", "database_id": "PASTE-ID-HERE" }
+  // ]
 }

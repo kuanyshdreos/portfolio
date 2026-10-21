@@ -46,7 +46,7 @@
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .inline{display:flex;gap:8px;align-items:center}
   .inline>input{flex:1}
-  .inline>input[type=color]{flex:none}
+  .inline>input[type=color],.inline>input[type=checkbox]{flex:none}
 
   /* works */
   .works{display:grid;grid-template-columns:360px 1fr;gap:14px;align-items:start}
@@ -69,11 +69,32 @@
 
   .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .chip{display:inline-flex;align-items:center;gap:6px;background:#f0f0ed;border-radius:20px;padding:4px 6px 4px 11px;font-size:13px}
+  .chip.pbadge{padding:5px 12px;border:1px solid transparent;cursor:pointer}
+  .chip.pbadge.on{background:var(--ink);color:#fff}
   .chip button{width:18px;height:18px;border-radius:50%;color:var(--muted)}
   .chip button:hover{background:#e0e0dc;color:var(--danger)}
 
   .brandprev{width:64px;height:64px;border-radius:50%;background:#111 center/contain no-repeat;flex:none;border:1px solid var(--line)}
   .brandprev.sq{border-radius:12px;background-color:#fff}
+  /* stats */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:#fafaf8;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .kpi small{display:block;color:var(--muted);font-size:12px}
+  .kpi b{display:block;font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1;margin-top:4px}
+  .chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:10px 0 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+  .chart div{flex:1;background:#151515;border-radius:4px 4px 0 0;min-height:2px;position:relative}
+  .chart div:hover{background:var(--acc)}
+  .chart div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);display:none;white-space:nowrap}
+  .chart div:hover span{display:block}
+  .stgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .stcol h3{font-size:13px;margin-bottom:8px}
+  .strow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #f0f0ee;font-size:14px}
+  .strow img{width:24px;height:18px;border-radius:3px;object-fit:cover;flex:none;background:#eee}
+  .strow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .strow .bar{flex:0 0 90px;height:6px;border-radius:3px;background:#eee;overflow:hidden}
+  .strow .bar i{display:block;height:100%;background:var(--acc)}
+  .strow b{width:38px;text-align:right;font-variant-numeric:tabular-nums}
+  @media (max-width:900px){ .kpis{grid-template-columns:1fr 1fr} .stgrid{grid-template-columns:1fr} }
   .coverbox{display:flex;gap:16px;align-items:flex-start;background:#fafaf8;border-radius:10px;padding:12px;margin-bottom:12px}
   .coverbox canvas{width:260px;aspect-ratio:4/3;border-radius:12px;display:block;background:#111}
   .swatch{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
@@ -109,6 +130,7 @@
     <button data-v="works" class="on">Работы</button>
     <button data-v="prices">Цены</button>
     <button data-v="clients">Клиенты</button>
+    <button data-v="stats">Статистика</button>
     <button data-v="site">Сайт</button>
     <button data-v="publish">Публикация</button>
   </div>
@@ -148,6 +170,17 @@
       <div id="pkgs"></div>
       <button class="btn sm" id="addPkg">+ пакет</button>
     </div>
+    <div class="box">
+      <h2>Как я работаю — техника, софт, процесс</h2>
+      <p class="hint" style="margin:-6px 0 12px">Отдельная страница в окне цен (кнопка «как я работаю»). Карточки группируются по полю «группа». Фото лучше на светлом или прозрачном фоне. Если пусто — кнопки на сайте не будет.</p>
+      <div class="row2">
+        <label class="f"><span>Заголовок</span><input type="text" data-site="gearTitle" placeholder="как я работаю"></label>
+        <label class="f"><span>Вступление (пара строк о процессе)</span><input type="text" data-site="gearIntro" placeholder="Снимаю, монтирую и сдаю за 3–5 дней…"></label>
+      </div>
+      <datalist id="gearGroups"><option>камера</option><option>свет</option><option>звук</option><option>софт</option><option>компьютер</option><option>процесс</option></datalist>
+      <div id="gearList"></div>
+      <button class="btn sm" id="addGear">+ позиция</button>
+    </div>
   </section>
 
   <!-- ============ КЛИЕНТЫ ============ -->
@@ -157,6 +190,18 @@
       <p class="hint" style="margin:-6px 0 14px">Бегущая строка внизу главного экрана. Логотипы на сайте становятся белыми, поэтому лучше PNG с прозрачным фоном. Без логотипа покажется название. Если выбрать работу — клик по логотипу откроет этот ролик.</p>
       <div id="clientsList"></div>
       <button class="btn sm" id="addClient">+ бренд</button>
+    </div>
+  </section>
+
+  <!-- ============ СТАТИСТИКА ============ -->
+  <section class="view" id="v-stats">
+    <div class="box">
+      <div class="inline" style="justify-content:space-between;flex-wrap:wrap;margin-bottom:14px">
+        <h2 style="margin:0">Статистика сайта</h2>
+        <div class="inline"><div class="seg" id="stPeriod"><button data-d="1" class="on">Сегодня</button><button data-d="7">7 дней</button><button data-d="30">30 дней</button></div>
+          <button class="btn sm" id="stReload">Обновить</button></div>
+      </div>
+      <div id="stBody"><div class="empty">Загружаю…</div></div>
     </div>
   </section>
 
@@ -243,7 +288,7 @@
 <input type="file" id="loopFile" accept="video/mp4,video/webm" hidden>
 <input type="file" id="coverFile" accept="image/jpeg,image/png,image/webp" hidden>
 <input type="file" id="logoFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>
-<script src="cover.js?v=3"></script>
+<script src="cover.js?v=4"></script>
 
 <script>
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -294,7 +339,7 @@ async function vimeoMeta(url){
   } catch { return { error: 'нет связи с Vimeo' }; }
 }
 const fmtDur = s => s ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '';
-function blank(){ return { site: { name: '', tagline: '', about: [], email: '', contact: '', socials: [], priceText: 'цены • пакеты • ', cfToken: '', logo: '', favicon: '', enterSound: 'войти со звуком', enterMute: 'без звука' }, categories: [], projects: [], packages: [], clients: [] }; }
+function blank(){ return { site: { name: '', tagline: '', about: [], email: '', contact: '', socials: [], priceText: 'цены • пакеты • ', cfToken: '', logo: '', favicon: '', enterSound: 'войти со звуком', enterMute: 'без звука' }, categories: [], projects: [], packages: [], clients: [], gear: [] }; }
 function normalize(d){
   const b = blank();
   d = d && typeof d === 'object' ? d : {};
@@ -303,6 +348,7 @@ function normalize(d){
   d.projects = (Array.isArray(d.projects) ? d.projects : []).map(p => ({ id: '', title: '', desc: '', category: '', format: '16:9', vimeo: '', loop: '', thumb: '', brand: '', logo: '', accent: '', cover: '', ...p }));
   d.packages = Array.isArray(d.packages) ? d.packages : [];
   d.clients = Array.isArray(d.clients) ? d.clients : [];
+  d.gear = Array.isArray(d.gear) ? d.gear : [];
   d.site.socials = (d.site.socials || []).map(s => Array.isArray(s) ? { label: s[0], url: s[1] } : s);
   return d;
 }
@@ -591,15 +637,32 @@ function renderPkgs(){
         <label class="f"><span>Название</span><input type="text" data-pk="name" value="${esc(k.name)}"></label>
         <label class="f"><span>Цена (как написать: $500, 150 000 ₸, по запросу)</span><input type="text" data-pk="price" value="${esc(k.price)}"></label>
       </div>
+      <div class="row2">
+        <label class="f"><span>Период рядом с ценой (например: в месяц, разово)</span><input type="text" data-pk="period" value="${esc(k.period)}" placeholder="в месяц"></label>
+        <label class="f"><span>Количество роликов (плашка на карточке)</span><input type="text" data-pk="videos" value="${esc(k.videos)}" placeholder="20 роликов"></label>
+      </div>
+      <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Бейдж — выделит пакет на сайте</span>
+        <div class="inline" style="flex-wrap:wrap">
+          ${['', 'самый популярный', 'хит', 'выгодно', 'новинка'].map(b => `<button class="chip pbadge ${(k.badge || '') === b ? 'on' : ''}" data-b="${esc(b)}">${b || 'без бейджа'}</button>`).join('')}
+          <input type="text" data-pk="badge" value="${esc(k.badge)}" placeholder="или свой текст" style="max-width:200px">
+        </div></div>
+      <label class="inline" style="margin:-4px 0 12px;font-size:13px"><input type="checkbox" data-hot ${k.hot ? 'checked' : ''}> выделить карточку (тёмная, заметнее остальных)</label>
       <label class="f"><span>Что входит — по пункту на строку</span><textarea data-pk="items">${esc((k.items || []).join('\n'))}</textarea></label>
+      <label class="f"><span>Подробно (текст в окне пакета, можно несколько строк)</span><textarea data-pk="details">${esc(k.details)}</textarea></label>
       <label class="f"><span>Примечание (мелко снизу)</span><input type="text" data-pk="note" value="${esc(k.note)}"></label>
     </div>`).join('') || '<div class="empty">Пакетов пока нет</div>';
   $$('.pk').forEach(el => {
     const k = D.packages[+el.dataset.i];
     $$('[data-pk]', el).forEach(inp => inp.oninput = () => {
       k[inp.dataset.pk] = inp.dataset.pk === 'items' ? inp.value.split('\n').map(s => s.trim()).filter(Boolean) : inp.value;
+      if (inp.dataset.pk === 'badge') $$('.pbadge', el).forEach(b => b.classList.toggle('on', b.dataset.b === inp.value));
       changed();
     });
+    $$('.pbadge', el).forEach(b => b.onclick = () => {
+      k.badge = b.dataset.b; $('[data-pk=badge]', el).value = k.badge;
+      $$('.pbadge', el).forEach(x => x.classList.toggle('on', x === b)); changed();
+    });
+    $('[data-hot]', el).onchange = e => { k.hot = e.target.checked; changed(); };
   });
   const swap = (a, b) => { if (b < 0 || b >= D.packages.length) return; [D.packages[a], D.packages[b]] = [D.packages[b], D.packages[a]]; renderPkgs(); changed(); };
   $$('[data-pu]').forEach(b => b.onclick = () => swap(+b.dataset.pu, +b.dataset.pu - 1));
@@ -861,7 +924,112 @@ async function setClientLogo(i, file){
 }
 $('#addClient').onclick = () => { D.clients.push({ name: '', logo: '', work: '' }); renderClients(); changed(); $('#clientsList input:last-of-type')?.focus(); };
 
-function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); renderClients(); renderSite(); renderIssues(); }
+// ---------- statistics (from worker.js → Cloudflare D1) ----------
+let stData = null, stDays = 1;
+const KIND_LABEL = { gear: 'Открыли «Как я работаю»', video: 'Открыли ролик', pkg: 'Открыли пакет', order: 'Нажали «заказать»', client: 'Клик по логотипу бренда', filter: 'Фильтр', contact: 'Контакты из меню' };
+const countryName = (() => { try { const dn = new Intl.DisplayNames(['ru'], { type: 'region' }); return c => { try { return dn.of(c); } catch { return c; } }; } catch { return c => c; } })();
+async function loadStats(){
+  const B = $('#stBody');
+  B.innerHTML = '<div class="empty">Загружаю…</div>';
+  let r;
+  try { r = await fetch('/admin/stats', { cache: 'no-store', credentials: 'same-origin' }); }
+  catch { B.innerHTML = '<div class="empty">Нет связи с сайтом.</div>'; return; }
+  if (r.status === 404 || r.status === 401) {
+    B.innerHTML = '<div class="empty">Статистика работает на опубликованном сайте в Cloudflare (не на локальной копии).</div>'; return;
+  }
+  if (!r.ok) { B.innerHTML = `<div class="empty bad">Ошибка: ${esc(await r.text())}</div>`; return; }
+  stData = await r.json();
+  if (!stData.configured) {
+    B.innerHTML = `<div class="empty">База для статистики ещё не подключена.<br>Cloudflare → Storage &amp; databases → D1 → Create (имя <b>portfolio-stats</b>), затем добавьте её в <b>wrangler.jsonc</b> — см. README, раздел «Статистика».</div>`; return;
+  }
+  renderStats();
+}
+function renderStats(){
+  const B = $('#stBody'), rows = stData.rows || [];
+  const today = stData.today, from = new Date(Date.parse(today) - (stDays - 1) * 864e5).toISOString().slice(0, 10);
+  const inRange = rows.filter(r => r.day >= from && r.day <= today);
+  const sum = (kind, by) => { const m = new Map(); inRange.filter(r => r.kind === kind).forEach(r => { const k = by(r); m.set(k, (m.get(k) || 0) + r.n); }); return [...m].sort((a, b) => b[1] - a[1]); };
+  const total = kind => inRange.filter(r => r.kind === kind).reduce((a, r) => a + r.n, 0);
+  const list = (title, entries, label, img) => {
+    const max = Math.max(1, ...entries.map(e => e[1]));
+    return `<div class="stcol"><h3>${title}</h3>${entries.length ? entries.slice(0, 12).map(([k, n]) => `
+      <div class="strow">${img ? img(k) : ''}<span class="nm">${esc(label(k))}</span><span class="bar"><i style="width:${n / max * 100}%"></i></span><b>${n}</b></div>`).join('')
+      : '<div class="hint">пока нет данных</div>'}</div>`;
+  };
+  const projTitle = id => (D.projects.find(p => p.id === id) || {}).title || id;
+  const flag = c => c && c !== 'XX' && c !== 'T1' ? `<img src="https://flagcdn.com/48x36/${c.toLowerCase()}.png" alt="" loading="lazy">` : '<img alt="">';
+  // daily visits chart for week / month
+  let chart = '';
+  if (stDays > 1) {
+    const days = [...Array(stDays)].map((_, i) => new Date(Date.parse(from) + i * 864e5).toISOString().slice(0, 10));
+    const per = days.map(d => rows.filter(r => r.day === d && r.kind === 'visit').reduce((a, r) => a + r.n, 0));
+    const max = Math.max(1, ...per);
+    chart = `<div class="chart">${per.map((n, i) => `<div style="height:${n / max * 100}%"><span>${days[i].slice(5)}: ${n}</span></div>`).join('')}</div>
+      <div class="hint" style="display:flex;justify-content:space-between"><span>${days[0].slice(5)}</span><span>${days.at(-1).slice(5)}</span></div>`;
+  }
+  const clicks = Object.keys(KIND_LABEL).filter(k => k !== 'video').flatMap(k => sum(k, r => r.item).map(([item, n]) => [`${k}|${item}`, n])).sort((a, b) => b[1] - a[1]);
+  B.innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><small>Визиты</small><b>${total('visit')}</b></div>
+      <div class="kpi"><small>Открыли ролик</small><b>${total('video')}</b></div>
+      <div class="kpi"><small>Открыли цены</small><b>${total('price')}</b></div>
+      <div class="kpi"><small>Нажали «заказать»</small><b>${total('order')}</b></div>
+    </div>
+    ${chart}
+    <div class="stgrid">
+      ${list('Страны', sum('visit', r => r.country), countryName, flag)}
+      ${list('Какие ролики открывали', sum('video', r => r.item), projTitle)}
+      ${list('Что нажимали', clicks, k => { const [kind, item] = k.split('|'); return KIND_LABEL[kind] + (item ? ': ' + item : ''); })}
+      ${list('Ролики по странам', sum('video', r => r.country), countryName, flag)}
+    </div>
+    <p class="hint" style="margin-top:12px">Время по UTC. Ваши просмотры в «Предпросмотре» не считаются. Боты отсеиваются. IP-адреса не хранятся.</p>`;
+}
+$$('#stPeriod button').forEach(b => b.onclick = () => {
+  stDays = +b.dataset.d; $$('#stPeriod button').forEach(x => x.classList.toggle('on', x === b));
+  if (stData && stData.configured) renderStats();
+});
+$('#stReload').onclick = loadStats;
+$('#tabs [data-v="stats"]').addEventListener('click', () => { if (!stData) loadStats(); });
+
+// ---------- «как я работаю» (gear) ----------
+function renderGear(){
+  const L = $('#gearList');
+  L.innerHTML = D.gear.map((g, i) => `
+    <div class="inline" style="margin-bottom:8px;flex-wrap:wrap">
+      <div class="brandprev sq" style="width:64px;height:48px;border-radius:8px;background-color:#f2f2f0;background-image:${g.img ? `url('${esc(resolve(g.img))}')` : 'none'}"></div>
+      <input type="text" list="gearGroups" data-gg="${i}" value="${esc(g.group)}" placeholder="группа" style="width:120px;flex:none">
+      <input type="text" data-gn="${i}" value="${esc(g.name)}" placeholder="например Sony A7 IV" style="flex:1;min-width:140px">
+      <input type="text" data-gt="${i}" value="${esc(g.note)}" placeholder="короткая подпись" style="flex:1;min-width:140px">
+      <button class="btn sm" data-gi="${i}">${g.img ? 'Фото ✓' : 'Фото'}</button>
+      <button class="btn sm" data-gu="${i}">▲</button><button class="btn sm" data-gd="${i}">▼</button>
+      <button class="btn sm danger" data-gx="${i}">×</button>
+    </div>`).join('') || '<div class="empty" style="padding:16px">Позиций пока нет</div>';
+  const bind = (attr, key) => $$(`[data-${attr}]`, L).forEach(i => i.oninput = () => { D.gear[+i.dataset[attr]][key] = i.value; changed(); });
+  bind('gg', 'group'); bind('gn', 'name'); bind('gt', 'note');
+  $$('[data-gi]', L).forEach(b => b.onclick = () => { const f = $('#logoFile'); f.value = ''; f.onchange = () => setGearImg(+b.dataset.gi, f.files[0]); f.click(); });
+  const swap = (a, b) => { if (b < 0 || b >= D.gear.length) return; [D.gear[a], D.gear[b]] = [D.gear[b], D.gear[a]]; renderGear(); changed(); };
+  $$('[data-gu]', L).forEach(b => b.onclick = () => swap(+b.dataset.gu, +b.dataset.gu - 1));
+  $$('[data-gd]', L).forEach(b => b.onclick = () => swap(+b.dataset.gd, +b.dataset.gd + 1));
+  $$('[data-gx]', L).forEach(b => b.onclick = () => { const g = D.gear[+b.dataset.gx]; if (!confirm(`Удалить «${g.name || 'позицию'}»?`)) return; pending.delete(g.img); D.gear.splice(+b.dataset.gx, 1); renderGear(); changed(); });
+}
+async function setGearImg(i, file){
+  if (!file || !/^image\//.test(file.type)) { if (file) alert('Нужна картинка: png, jpg или webp'); return; }
+  const url = URL.createObjectURL(file);
+  const img = await new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = url; });
+  URL.revokeObjectURL(url);
+  if (!img) { alert('Не получилось открыть это фото'); return; }
+  const w = img.naturalWidth || 600, h = img.naturalHeight || 450, k = Math.min(1, 700 / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  const g = D.gear[i];
+  if (pending.has(g.img)) pending.delete(g.img);
+  g.img = stage(`gear/${slug(g.name || 'item')}-${Date.now().toString(36)}.png`, new File([blob], 'gear.png', { type: 'image/png' }));
+  renderGear(); changed();
+}
+$('#addGear').onclick = () => { D.gear.push({ group: '', name: '', note: '', img: '' }); renderGear(); changed(); };
+
+function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); renderGear(); renderClients(); renderSite(); renderIssues(); }
 (async () => {
   try { published = normalize(await fetch('data.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw 0; return r.json(); })); }
   catch { published = null; }
