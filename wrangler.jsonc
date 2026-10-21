@@ -1,0 +1,12 @@
+{
+  // name must match the Worker in Cloudflare
+  "name": "portfolio",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    // every request goes through worker.js first, so /admin can't be served around the password check
+    "run_worker_first": true
+  }
+}
