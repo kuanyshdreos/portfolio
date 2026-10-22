@@ -8,7 +8,7 @@
 const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/stats(\/reset)?$/;
 // click kinds the site may report: video opened, price popup, package opened, "order" pressed,
 // contact from the menu, brand logo, category filter
-const HIT_KINDS = new Set(['video', 'price', 'pkg', 'order', 'contact', 'client', 'filter', 'gear']);
+const HIT_KINDS = new Set(['video', 'price', 'pkg', 'order', 'contact', 'client', 'filter', 'gear', 'model', 'browser']);
 const BOT_UA =/bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|vkshare|headless|lighthouse/i;
 
 // compare without leaking how many characters matched

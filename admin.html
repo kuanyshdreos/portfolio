@@ -1157,8 +1157,10 @@ function renderStats(){
       ${list('Какие ролики открывали', sum('video', r => r.item), projTitle)}
       ${list('Что нажимали', clicks, k => { const [kind, item] = k.split('|'); return KIND_LABEL[kind] + (item ? ': ' + item : ''); })}
       ${list('Ролики по странам', sum('video', r => r.country), countryName, flag)}
+      ${list('Устройства', sum('model', r => r.item), k => k)}
+      ${list('Браузеры', sum('browser', r => r.item), k => k)}
     </div>
-    <p class="hint" style="margin-top:12px">Время по UTC. Ваши просмотры в «Предпросмотре» не считаются. Боты отсеиваются. IP-адреса не хранятся.</p>`;
+    <p class="hint" style="margin-top:12px">Модель айфона определяется по размеру экрана (например «iPhone 15 / 16» — у них одинаковый экран), у Android — точная модель, если её отдаёт браузер. У компьютеров видна система и разрешение экрана, модель ноутбука браузеры не сообщают. Время по UTC. Ваши просмотры в «Предпросмотре» не считаются. Боты отсеиваются. IP-адреса не хранятся.</p>`;
 }
 $$('#stPeriod button').forEach(b => b.onclick = () => {
   stDays = +b.dataset.d; $$('#stPeriod button').forEach(x => x.classList.toggle('on', x === b));

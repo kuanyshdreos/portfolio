@@ -1155,6 +1155,40 @@ function track(kind, item = ''){
   try { navigator.sendBeacon('/hit', new Blob([kind + '|' + String(item).slice(0, 60)], { type: 'text/plain' })); } catch {}
 }
 
+// ---------- which device / browser a visitor uses (once per visit; no personal data) ----------
+// iPhones don't say their model: it is guessed from the screen size (models with the same screen share a label).
+// Android Chrome tells the exact model; computers only tell the system and the screen.
+const IPHONES = { '440x956': 'iPhone 16 Pro Max', '402x874': 'iPhone 16 Pro', '430x932': 'iPhone 14 Pro Max / 15 Plus / 15 Pro Max / 16 Plus',
+  '393x852': 'iPhone 14 Pro / 15 / 15 Pro / 16', '428x926': 'iPhone 12 / 13 Pro Max / 14 Plus', '390x844': 'iPhone 12 / 13 / 14',
+  '375x812': 'iPhone X / 11 Pro / 12 mini / 13 mini', '414x896': 'iPhone XR / 11 / 11 Pro Max', '375x667': 'iPhone SE / 6 / 7 / 8', '414x736': 'iPhone 6 / 7 / 8 Plus' };
+async function deviceInfo(){
+  const ua = navigator.userAgent, sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+  let model;
+  if (/iPhone/.test(ua)) model = IPHONES[`${sw}x${sh}`] || `iPhone (${sw}×${sh})`;
+  else if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) model = 'iPad';
+  else if (/Android/.test(ua)) {
+    let m = '';
+    try { m = (await navigator.userAgentData.getHighEntropyValues(['model'])).model; } catch {}
+    if (!m) m = (/Android [\d.]+; ([^;)]+?)(?: Build|\))/.exec(ua) || [])[1] || '';
+    if (/^K$/.test(m)) m = '';
+    model = (/Mobile/.test(ua) ? 'Android' : 'Android-планшет') + (m ? ' · ' + m : '');
+  } else {
+    const os = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'Mac' : /CrOS/.test(ua) ? 'Chromebook' : /Linux/.test(ua) ? 'Linux' : 'компьютер';
+    model = `${os} · экран ${sh}×${sw}${sh <= 1600 ? ' (скорее ноутбук)' : ''}`;
+  }
+  const browser = /Instagram/.test(ua) ? 'Instagram (внутри приложения)' : /Telegram/.test(ua) ? 'Telegram (внутри приложения)'
+    : /FBAN|FBAV/.test(ua) ? 'Facebook (внутри приложения)' : /WhatsApp/.test(ua) ? 'WhatsApp (внутри приложения)'
+    : /YaBrowser|YaApp|Yowser/.test(ua) ? 'Яндекс Браузер' : /SamsungBrowser/.test(ua) ? 'Samsung Internet'
+    : /Edg(e|iOS|A)?\//.test(ua) ? 'Edge' : /OPR|Opera|OPT\//.test(ua) ? 'Opera' : /Firefox|FxiOS/.test(ua) ? 'Firefox'
+    : navigator.brave ? 'Brave' : /CriOS|Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'другой';
+  return { model, browser };
+}
+async function trackDevice(){
+  try { if (sessionStorage.getItem('portfolio-dev')) return; sessionStorage.setItem('portfolio-dev', '1'); } catch {}
+  const d = await deviceInfo();
+  track('model', d.model); track('browser', d.browser);
+}
+
 // ---------- price popup ----------
 const priceModal = $('#priceModal');
 function openPrice(){
@@ -1638,6 +1672,7 @@ addEventListener('keydown', e => {
   else if (SITE.enterMute) $('#intro [data-sound="0"]').textContent = SITE.enterMute;
   // visitor stats (countries, visits per day/week/month) — Cloudflare Web Analytics, no cookies;
   // skipped in admin preview so your own checks don't count
+  trackDevice();
   if (SITE.cfToken && !IS_DRAFT) {
     const s = document.createElement('script');
     s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
