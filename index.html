@@ -70,7 +70,10 @@
   #filters button.on,#filters button:hover{color:var(--fg)}
   #filters i{width:4px;height:4px;border-radius:50%;background:#555;flex:none}
   .right{display:flex;gap:8px;align-items:center}
-  #viewBtn{display:none;background:#222;border-radius:22px;height:34px;padding:0 12px;font-size:13px}
+  #viewBtn{display:none;align-items:center;gap:7px;height:34px;padding:0 14px 0 11px;border-radius:22px;font-size:13px;font-weight:600;color:#06210f;
+    background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px -6px var(--g1);animation:vbPulse 2.6s ease-in-out 3}
+  #viewBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  @keyframes vbPulse{50%{box-shadow:0 6px 26px -2px var(--g1);transform:scale(1.05)}}
   #menuBtn{background:#fff;color:var(--ink);border-radius:22px;height:34px;padding:0 12px 0 14px;display:flex;align-items:center;gap:8px;font-size:13px}
   #menuBtn .dot{width:6px;height:6px;border-radius:50%;background:var(--ink)}
 
@@ -174,7 +177,7 @@
   .pcard.hot .pbuy{background:linear-gradient(135deg,var(--g1),var(--g2));color:#06210f}
   .pcard.hot .pmore:hover{color:#fff}
   .ptrust{margin-top:22px;text-align:center;font-size:13px;color:#777}
-  @media (max-width:700px){ .pcard.hot{transform:none;order:-1} .pcard.hot:hover{transform:translateY(-4px)} }
+  @media (max-width:700px){ .pcard.hot{transform:none;order:-1;z-index:auto;box-shadow:0 16px 34px -24px rgba(60,255,143,.55)} .pcard.hot:hover{transform:translateY(-4px)} .pgrid{row-gap:30px} }
   /* «как я работаю»: equipment & software cards grouped by kind */
   .gearlink{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:10px;padding:16px 18px;border-radius:16px;
     background:#fff;border:1px solid #ececec;font-size:15px;text-align:left;transition:transform .45s var(--out),box-shadow .45s var(--out)}
@@ -449,7 +452,7 @@
     body.has-clients.listview::after,body.has-clients.playing::after{display:none}
     header{flex-wrap:wrap}
     #filters{order:3;width:100%}
-    #viewBtn{display:block}
+    #viewBtn{display:inline-flex}
     #list{padding-top:110px}
     #priceBtn{width:68px;height:68px;left:10px} #priceBtn .ic{inset:20px;font-size:15px;border-radius:9px}
     #priceBtn text{font-size:13px}
@@ -478,7 +481,7 @@
 <header>
   <a href="#" class="orb sm" id="home" aria-label="home"></a>
   <nav id="filters"></nav>
-  <div class="right"><button id="viewBtn">список</button><button id="menuBtn">меню <span class="dot"></span></button></div>
+  <div class="right"><button id="viewBtn"><span class="ic"></span><span class="tx">список</span></button><button id="menuBtn">меню <span class="dot"></span></button></div>
 </header>
 
 <div id="shade"></div>
@@ -1095,9 +1098,14 @@ function renderList(){
 }
 function setView(v){
   body.classList.toggle('listview', v === 'list');
-  $('#viewBtn').textContent = v === 'list' ? 'спираль' : 'список';
+  // the button shows where it leads: a list icon in the spiral, a spiral icon in the list
+  $('#viewBtn .tx').textContent = v === 'list' ? 'спираль' : 'список';
+  $('#viewBtn .ic').innerHTML = v === 'list'
+    ? '<svg viewBox="0 0 24 24"><path d="M12 12a2 2 0 1 1 2-2 4 4 0 1 1-4 4 6 6 0 1 1 6-6 8 8 0 1 1-8 8"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>';
 }
 $('#viewBtn').onclick = () => setView(body.classList.contains('listview') ? 'spiral' : 'list');
+setView('spiral');   // draws the button's icon
 
 // ---------- panels (menu / about / price) grow out of a dot ----------
 function openPanel(id, from){
