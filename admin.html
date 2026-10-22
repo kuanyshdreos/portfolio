@@ -42,7 +42,11 @@
   .box+.box{margin-top:14px}
   .box h2{font-size:15px;margin-bottom:12px}
   .hint{font-size:12px;color:var(--muted);margin-top:4px}
-  .brandprev.ph{width:60px;height:75px;background-size:cover}
+  .cnt{float:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:3px}
+  .cnt.full{color:#b26b00}
+  .brandprev.ph{width:64px;height:64px;border-radius:50%;background-size:cover;background-position:center 30%;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--line)}
+  .fmtbar{display:flex;gap:6px;margin:0 0 6px}
+  .fmtbar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;font-size:13px}
   .mrow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
   .mrow img{width:56px;height:36px;object-fit:cover;border-radius:6px;background:#eee;flex:none}
   .mrow input{flex:1;min-width:0}
@@ -195,7 +199,7 @@
         </ul>
       </div>
       <div class="row2">
-        <label class="f"><span>Заголовок</span><input type="text" data-site="gearTitle" placeholder="как я работаю"></label>
+        <label class="f"><span>Заголовок</span><input type="text" data-site="gearTitle" maxlength="24" data-max="24" placeholder="как я работаю"></label>
         <label class="f"><span>Вступление (пара строк о процессе)</span><input type="text" data-site="gearIntro" placeholder="Снимаю, монтирую и сдаю за 3–5 дней…"></label>
       </div>
       <datalist id="gearGroups"><option>камера</option><option>свет</option><option>звук</option><option>софт</option><option>компьютер</option><option>процесс</option></datalist>
@@ -247,11 +251,13 @@
       </div>
       <label class="f"><span>Подпись на заставке (новая строка = перенос)</span><textarea data-site="tagline" data-br></textarea></label>
       <label class="f"><span>Ссылка для «contact» и «написать» в ценах (Telegram, WhatsApp, почта)</span><input type="text" data-site="contact" placeholder="https://t.me/username"></label>
-      <label class="f"><span>About — абзацы (пустая строка = новый абзац)</span><textarea data-site="about" data-paras style="min-height:120px"></textarea></label>
+      <div class="f"><span>Обо мне — текст. Пустая строка = новый абзац. <b>**жирный**</b>, <i>_курсив_</i>, строка с «- » = пункт списка, ссылки станут кликабельными</span>
+        <div class="fmtbar"><button data-fmt="b" title="жирный"><b>Ж</b></button><button data-fmt="i" title="курсив"><i>К</i></button><button data-fmt="li" title="пункт списка">• пункт</button><button data-fmt="p" title="новый абзац">¶ абзац</button></div>
+        <textarea data-site="about" data-paras id="aboutArea" style="min-height:140px"></textarea></div>
       <div class="row2">
         <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Ваше фото в «обо мне»: вертикальный портрет (4:5), от 800 px, лицо по центру. Необязательно</span>
           <div class="inline"><div class="brandprev ph" id="photoPrev"></div><button class="btn sm" id="pickPhoto">Загрузить</button><button class="btn sm" id="clearPhoto">Убрать</button></div></div>
-        <label class="f"><span>Подпись под именем в «обо мне»</span><input type="text" data-site="role" placeholder="монтажёр и моушн-дизайнер · Алматы"></label>
+        <label class="f"><span>Подпись под именем в «обо мне»</span><input type="text" data-site="role" maxlength="50" data-max="50" placeholder="монтажёр и моушн-дизайнер · Алматы"></label>
       </div>
     </div>
     <div class="box">
@@ -525,20 +531,20 @@ function renderEditor(){
       <div id="moreList">${(p.more || []).map((m, i) => `
         <div class="mrow" data-i="${i}">
           <img alt="" ${m.thumb ? `src="${esc(m.thumb)}"` : ''}>
-          <input type="text" value="${esc(m.title)}" placeholder="название ролика" data-t="${i}">
+          <input type="text" value="${esc(m.title)}" placeholder="название ролика" data-t="${i}" maxlength="40" data-max="40">
           <button class="btn sm" data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="btn sm" data-dn="${i}" ${i === p.more.length - 1 ? 'disabled' : ''}>↓</button><button class="btn sm danger" data-rm="${i}">×</button>
         </div>`).join('')}</div>
       <div class="inline"><textarea id="moreIn" rows="2" placeholder="Вставьте одну или несколько ссылок Vimeo (каждая с новой строки)"></textarea><button class="btn sm" id="moreAdd">Добавить</button></div>
       <div class="hint" id="moreInfo"></div>
     </div>
     <div class="row2">
-      <label class="f"><span>Название</span><input type="text" data-k="title" value="${esc(p.title)}"></label>
+      <label class="f"><span>Название</span><input type="text" data-k="title" value="${esc(p.title)}" maxlength="28" data-max="28"></label>
       <label class="f"><span>Категория</span><select data-k="category">
         <option value="">— без категории —</option>
         ${D.categories.map(c => `<option ${c === p.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}
       </select></label>
     </div>
-    <label class="f"><span>Описание (одна короткая строка — видно при наведении)</span><input type="text" data-k="desc" value="${esc(p.desc)}" maxlength="140"></label>
+    <label class="f"><span>Описание (видно под названием на сайте)</span><input type="text" data-k="desc" value="${esc(p.desc)}" maxlength="70" data-max="70"></label>
     <label class="f"><span>Формат</span>
       <div class="seg" id="fmt"><button data-f="16:9" class="${p.format !== '9:16' ? 'on' : ''}">16:9 горизонтальный</button><button data-f="9:16" class="${p.format === '9:16' ? 'on' : ''}">9:16 рилс</button></div></label>
     <label class="f"><span>Видео-превью для спирали: 4:3 (960×720), 3–6 сек, mp4, без звука — играет при наведении. Другие пропорции обрежутся по центру. Необязательно: без него будет картинка с Vimeo.</span>
@@ -560,7 +566,7 @@ function renderEditor(){
         ${p.cover ? `
           <div class="inline" style="margin-bottom:6px"><input type="text" data-k="cover" value="${esc(p.cover)}"><button class="btn sm" id="pickCover">Заменить фото</button></div>
           <div class="hint">${pending.has(p.cover) ? `<span class="ok">фото готово (${Math.round(pending.get(p.cover).size / 1024)} КБ) — загрузится при публикации</span>` : 'любое фото обрежется до 4:3 (1200×900) и сожмётся'}</div>` : `
-          <label class="f"><span>Бренд / клиент (крупно)</span><input type="text" data-k="brand" value="${esc(p.brand)}" placeholder="${esc(p.title || 'например Qahramanfit')}"></label>
+          <label class="f"><span>Бренд / клиент (крупно)</span><input type="text" data-k="brand" value="${esc(p.brand)}" maxlength="22" data-max="22" placeholder="${esc(p.title || 'например Qahramanfit')}"></label>
           <label class="f"><span>Логотип (png с прозрачным фоном)</span>
             <div class="inline"><input type="text" data-k="logo" value="${esc(p.logo)}" placeholder="logos/name.png"><button class="btn sm" id="pickLogo">Загрузить</button>${p.logo ? '<button class="btn sm" id="clearLogo">×</button>' : ''}</div></label>
           <label class="f"><span>Цвет акцента</span>
@@ -724,21 +730,21 @@ function renderPkgs(){
       <div class="head"><b style="flex:1">Пакет ${i + 1}</b>
         <button class="btn sm" data-pu="${i}">▲</button><button class="btn sm" data-pd="${i}">▼</button><button class="btn sm danger" data-px="${i}">Удалить</button></div>
       <div class="row2">
-        <label class="f"><span>Название</span><input type="text" data-pk="name" value="${esc(k.name)}"></label>
-        <label class="f"><span>Цена (как написать: $500, 150 000 ₸, по запросу)</span><input type="text" data-pk="price" value="${esc(k.price)}"></label>
+        <label class="f"><span>Название</span><input type="text" data-pk="name" value="${esc(k.name)}" maxlength="20" data-max="20"></label>
+        <label class="f"><span>Цена (как написать: $500, 150 000 ₸, по запросу)</span><input type="text" data-pk="price" value="${esc(k.price)}" maxlength="14" data-max="14"></label>
       </div>
       <div class="row2">
-        <label class="f"><span>Старая цена (зачёркнутая, для скидки)</span><input type="text" data-pk="oldPrice" value="${esc(k.oldPrice)}" placeholder="$600"></label>
-        <label class="f"><span>Плашка выгоды (например: −20%, экономия $100)</span><input type="text" data-pk="save" value="${esc(k.save)}" placeholder="−20%"></label>
+        <label class="f"><span>Старая цена (зачёркнутая, для скидки)</span><input type="text" data-pk="oldPrice" value="${esc(k.oldPrice)}" maxlength="14" data-max="14" placeholder="$600"></label>
+        <label class="f"><span>Плашка выгоды (например: −20%, экономия $100)</span><input type="text" data-pk="save" value="${esc(k.save)}" maxlength="18" data-max="18" placeholder="−20%"></label>
       </div>
       <div class="row2">
-        <label class="f"><span>Период рядом с ценой (например: в месяц, разово)</span><input type="text" data-pk="period" value="${esc(k.period)}" placeholder="в месяц"></label>
-        <label class="f"><span>Количество роликов (плашка на карточке)</span><input type="text" data-pk="videos" value="${esc(k.videos)}" placeholder="20 роликов"></label>
+        <label class="f"><span>Период рядом с ценой (например: в месяц, разово)</span><input type="text" data-pk="period" value="${esc(k.period)}" maxlength="14" data-max="14" placeholder="в месяц"></label>
+        <label class="f"><span>Количество роликов (плашка на карточке)</span><input type="text" data-pk="videos" value="${esc(k.videos)}" maxlength="18" data-max="18" placeholder="20 роликов"></label>
       </div>
       <div class="f"><span class="hint" style="display:block;margin:0 0 6px">Бейдж — выделит пакет на сайте</span>
         <div class="inline" style="flex-wrap:wrap">
           ${['', 'самый популярный', 'новинка', 'скидка', 'выгодно'].map(b => `<button class="chip pbadge ${(k.badge || '') === b ? 'on' : ''}" data-b="${esc(b)}">${b || 'без бейджа'}</button>`).join('')}
-          <input type="text" data-pk="badge" value="${esc(k.badge)}" placeholder="или свой текст" style="max-width:200px">
+          <input type="text" data-pk="badge" value="${esc(k.badge)}" maxlength="18" data-max="18" placeholder="или свой текст" style="max-width:200px">
         </div></div>
       <label class="inline" style="margin:-4px 0 12px;font-size:13px"><input type="checkbox" data-hot ${k.hot ? 'checked' : ''}> выделить карточку (тёмная, заметнее остальных)</label>
       <label class="f"><span>Что входит — по пункту на строку</span><textarea data-pk="items">${esc((k.items || []).join('\n'))}</textarea></label>
@@ -765,6 +771,16 @@ function renderPkgs(){
 }
 $('#addPkg').onclick = () => { D.packages.push({ name: 'новый пакет', price: '', items: [], note: '' }); renderPkgs(); changed(); };
 
+// ---------- character counters for fields with a limit (data-max) ----------
+function countField(inp){
+  if (!inp.dataset.max) return;
+  let c = inp.nextElementSibling;
+  if (!c || !c.classList.contains('cnt')) { c = document.createElement('span'); c.className = 'cnt'; inp.after(c); }
+  const n = inp.value.length, max = +inp.dataset.max;
+  c.textContent = `${n} / ${max}`; c.classList.toggle('full', n >= max);
+}
+['input', 'focusin'].forEach(t => document.addEventListener(t, e => { if (e.target.matches && e.target.matches('[data-max]')) countField(e.target); }));
+
 // ---------- site settings ----------
 function renderSite(){
   $$('[data-site]').forEach(inp => {
@@ -782,6 +798,13 @@ function renderSite(){
   renderSocials();
   renderBrand();
 }
+// formatting buttons: wrap the selected words or insert a list item / paragraph break
+$$('.fmtbar button').forEach(b => b.onclick = e => {
+  e.preventDefault();
+  const t = $('#aboutArea'), a = t.selectionStart, z = t.selectionEnd, sel = t.value.slice(a, z), f = b.dataset.fmt;
+  const ins = f === 'b' ? `**${sel || 'жирный'}**` : f === 'i' ? `_${sel || 'курсив'}_` : f === 'li' ? `\n- ${sel || 'пункт'}` : '\n\n';
+  t.setRangeText(ins, a, z, 'end'); t.focus(); t.dispatchEvent(new Event('input'));
+});
 function renderSocials(){
   $('#socials').innerHTML = D.site.socials.map((s, i) => `
     <div class="inline" style="margin-bottom:8px"><input type="text" style="max-width:90px;flex:none" data-sl="${i}" value="${esc(s.label)}" placeholder="ig">
@@ -1097,8 +1120,8 @@ function renderGear(){
     <div class="inline" style="margin-bottom:8px;flex-wrap:wrap">
       <div class="brandprev sq" style="width:64px;height:48px;border-radius:8px;background-color:#f2f2f0;background-image:${g.img ? `url('${esc(resolve(g.img))}')` : 'none'}"></div>
       <input type="text" list="gearGroups" data-gg="${i}" value="${esc(g.group)}" placeholder="группа" style="width:120px;flex:none">
-      <input type="text" data-gn="${i}" value="${esc(g.name)}" placeholder="например Sony A7 IV" style="flex:1;min-width:140px">
-      <input type="text" data-gt="${i}" value="${esc(g.note)}" placeholder="короткая подпись" style="flex:1;min-width:140px">
+      <input type="text" data-gn="${i}" value="${esc(g.name)}" maxlength="28" data-max="28" placeholder="например Sony A7 IV" style="flex:1;min-width:140px">
+      <input type="text" data-gt="${i}" value="${esc(g.note)}" maxlength="50" data-max="50" placeholder="короткая подпись" style="flex:1;min-width:140px">
       <input type="text" data-gx2="${i}" value="${esc(g.text)}" placeholder="подробно: чем хороша, зачем она мне (для страницы позиции)" style="flex-basis:100%">
       <button class="btn sm" data-gi="${i}">${g.img ? 'Фото ✓' : 'Фото'}</button>
       <button class="btn sm" data-gu="${i}">▲</button><button class="btn sm" data-gd="${i}">▼</button>
