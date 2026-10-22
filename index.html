@@ -323,6 +323,13 @@
   #player .frame{position:relative;overflow:hidden;border-radius:14px;background:#000;box-shadow:0 40px 120px rgba(0,0,0,.65)}
   #player .media,#player .media>*{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;object-fit:cover}
   #player .hit{position:absolute;inset:0;z-index:2;cursor:none}
+  #player .soundtip{position:absolute;left:50%;bottom:18px;z-index:3;transform:translate(-50%,10px);display:flex;align-items:center;gap:8px;white-space:nowrap;
+    padding:9px 15px 9px 12px;border-radius:22px;background:#fff;color:#111;font-size:13px;font-weight:600;text-transform:none;pointer-events:none;
+    opacity:0;transition:opacity .35s,transform .45s var(--out);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  #player .soundtip svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  #player .soundtip svg .fl{fill:currentColor;stroke:none}
+  #player.silent .soundtip{opacity:1;transform:translate(-50%,0);animation:tipPulse 2s ease-in-out infinite}
+  @keyframes tipPulse{50%{box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 6px rgba(255,255,255,.18)}}
   #player.novideo .hit,#player.novideo .bar{cursor:default}
   #player .big{position:absolute;left:50%;top:50%;z-index:3;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;
     background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center;font-size:24px;pointer-events:none;
@@ -545,7 +552,7 @@
   <div class="pbg"><canvas width="24" height="24"></canvas></div>
   <div class="wrap">
     <div class="frame">
-      <div class="media"></div><div class="poster"></div><div class="hit"></div><div class="big"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></div>
+      <div class="media"></div><div class="poster"></div><div class="hit"></div><div class="soundtip"><svg viewBox="0 0 24 24"><path class="fl" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>нажмите — включить звук</div><div class="big"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></div>
       <div class="nextup" id="nextUp"><svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span class="nu-t"></span><button class="nu-now">сейчас</button><button class="nu-x" aria-label="отмена">×</button></div>
     </div>
     <div class="bar"><i></i><u></u></div>
@@ -1199,7 +1206,7 @@ addEventListener('message', e => {
   if (!d || !(d.event || d.method)) return;
   ctrl.alive = true;
   if (d.event === 'ready') vSubscribe();
-  if (d.event === 'play') ctrl.paused = false;
+  if (d.event === 'play') { ctrl.paused = false; vpost('getMuted'); }   // the browser may have muted the autoplay: ask
   if (d.event === 'pause') ctrl.paused = true;
   if (d.event === 'ended' || d.event === 'finish') finishVideo();
   // vimeo reports progress as "playProgress" (older protocol) or "timeupdate"
@@ -1224,6 +1231,7 @@ const ICON_ON = '<svg viewBox="0 0 24 24"><path class="fl" d="M4 9.5h3.5L12 5.5v
 const ICON_OFF = '<svg viewBox="0 0 24 24"><path class="fl" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>';
 function updateUI(){
   player.classList.toggle('paused', ctrl.kind !== 'none' && ctrl.paused);
+  player.classList.toggle('silent', ctrl.kind !== 'none' && !ctrl.paused && ctrl.muted);
   $('#player .time').textContent = ctrl.dur ? `${fmt(ctrl.t)} / ${fmt(ctrl.dur)}` : '';
   $('#muteBtn').innerHTML = ctrl.muted ? ICON_OFF : ICON_ON;
   updateCur();
