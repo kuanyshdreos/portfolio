@@ -49,6 +49,7 @@
     const PALETTE = ['#3cff8f', '#1fd1ff', '#ff4d6d', '#ffd23f', '#a78bfa', '#ff8a3d'];
     const hash = [...String(p.id || p.title || '')].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
     const accent = p.accent || PALETTE[hash % PALETTE.length];
+    p._accent = accent;
     const [frame, logo] = await Promise.all([loadImg(resolve(p.thumb)), loadImg(resolve(p.logo))]);
     const brand = (p.brand || p.title || '').trim();
     // second line: the work's title when a brand is the headline, otherwise its short description
@@ -61,9 +62,17 @@
     // background: blurred frame, or an accent gradient
     x.fillStyle = '#0b0b0b'; x.fillRect(0, 0, W, H);
     if (frame) {
-      x.filter = 'blur(46px) brightness(.5) saturate(1.25)';
-      drawCover(x, frame, -120, -120, W + 240, H + 240);
-      x.filter = 'none';
+      // blur without ctx.filter (Safari / iPhone ignores it and showed the frame sharp and bright):
+      // shrink the frame to a few dozen pixels, then stretch it back with smoothing — that is the blur
+      const small = document.createElement('canvas'); small.width = 48; small.height = 36;
+      const sx = small.getContext('2d'); sx.imageSmoothingQuality = 'high';
+      drawCover(sx, frame, -4, -4, 56, 44);
+      const mid = document.createElement('canvas'); mid.width = 192; mid.height = 144;
+      const mx = mid.getContext('2d'); mx.imageSmoothingQuality = 'high';
+      mx.drawImage(small, 0, 0, 192, 144);
+      x.imageSmoothingQuality = 'high';
+      x.drawImage(mid, -60, -60, W + 120, H + 120);
+      x.fillStyle = 'rgba(0,0,0,.5)'; x.fillRect(0, 0, W, H);      // = brightness(.5)
     } else {
       const g = x.createRadialGradient(W * .25, H * .2, 20, W * .5, H * .5, W * .9);
       g.addColorStop(0, accent); g.addColorStop(.55, '#151515'); g.addColorStop(1, '#070707');
