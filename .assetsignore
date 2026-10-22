@@ -1,0 +1,11 @@
+worker.js
+wrangler.jsonc
+.assetsignore
+.dev.vars
+.wrangler
+node_modules
+README.md
+make-loop.bat
+.git
+.wt
+wrangler.test.jsonc
