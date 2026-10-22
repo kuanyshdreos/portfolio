@@ -5,7 +5,7 @@
 // - Visit statistics: each page visit and each opened video is counted per day and country
 //   in a Cloudflare D1 database (binding DB). No IP addresses or personal data are stored.
 
-const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/stats$/;
+const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/stats(\/reset)?$/;
 // click kinds the site may report: video opened, price popup, package opened, "order" pressed,
 // contact from the menu, brand logo, category filter
 const HIT_KINDS = new Set(['video', 'price', 'pkg', 'order', 'contact', 'client', 'filter', 'gear']);
@@ -45,6 +45,7 @@ async function ensureSchema(db){
 }
 async function count(env, request, kind, item = ''){
   if (!env.DB || BOT_UA.test(request.headers.get('User-Agent') || '')) return;
+  if (/(^|;\s*)notrack=1/.test(request.headers.get('Cookie') || '')) return;   // the owner's browser (set by the admin)
   const day = new Date().toISOString().slice(0, 10);
   const country = (request.cf && request.cf.country) || 'XX';
   await ensureSchema(env.DB);
@@ -78,9 +79,9 @@ export default {
 
     if (!ADMIN_PATH.test(url.pathname)) {
       let res = await env.ASSETS.fetch(request);
-      // short client links: /qfitness → opens that work (/#p/qfitness); only when no real file has that name
+      // short client links: /qfitness → opens that work (/#qfitness); only when no real file has that name
       const short = /^\/([a-z0-9-]{1,64})(?:\/(\d{1,3}))?\/?$/.exec(url.pathname);
-      if (short && res.status === 404) return Response.redirect(`${url.origin}/#p/${short[1]}${short[2] ? "/" + short[2] : ""}`, 302);
+      if (short && res.status === 404) return Response.redirect(`${url.origin}/#${short[1]}${short[2] ? "/" + short[2] : ""}`, 302);
       // a real page visit: the home page loaded as a document (not the admin's preview)
       const isPage = request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')
         && (request.headers.get('Accept') || '').includes('text/html') && !url.searchParams.has('draft') && res.ok;
@@ -97,6 +98,12 @@ export default {
     const ok = c && same(c[0], env.ADMIN_USER) & same(c[1], env.ADMIN_PASS);
     if (!ok) return text('Нужен логин и пароль.', 401, { 'WWW-Authenticate': 'Basic realm="admin", charset="UTF-8"' });
 
+    // "start over": wipes every counted visit and click
+    if (url.pathname === '/admin/stats/reset' && request.method === 'POST') {
+      if (!env.DB) return text('База не подключена.', 400);
+      try { await ensureSchema(env.DB); await env.DB.prepare('DELETE FROM hits').run(); return text('ok', 200); }
+      catch (e) { return text('Ошибка базы: ' + e.message, 500); }
+    }
     if (url.pathname === '/admin/stats') {
       try {
         return new Response(JSON.stringify(await stats(env)), {
@@ -108,6 +115,9 @@ export default {
     const out = new Response(res.body, res);
     out.headers.set('Cache-Control', 'no-store');      // don't keep the admin in shared caches
     out.headers.set('X-Robots-Tag', 'noindex');
+    // whoever logs into the admin is the owner: their own visits to the site are not counted from now on
+    if (!/(^|;\s*)notrack=/.test(request.headers.get('Cookie') || ''))
+      out.headers.append('Set-Cookie', 'notrack=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure');
     return out;
   },
 };

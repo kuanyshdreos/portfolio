@@ -235,9 +235,10 @@
       <div class="inline" style="justify-content:space-between;flex-wrap:wrap;margin-bottom:14px">
         <h2 style="margin:0">Статистика сайта</h2>
         <div class="inline"><div class="seg" id="stPeriod"><button data-d="1" class="on">Сегодня</button><button data-d="7">7 дней</button><button data-d="30">30 дней</button></div>
-          <button class="btn sm" id="stReload">Обновить</button></div>
+          <button class="btn sm" id="stReload">Обновить</button><button class="btn sm danger" id="stReset">Сбросить</button></div>
       </div>
       <div id="stBody"><div class="empty">Загружаю…</div></div>
+      <label class="inline" style="margin-top:12px;font-size:13px"><input type="checkbox" id="stMe"> не считать мои заходы с этого браузера (телефон отметьте так же: откройте админку и на нём)</label>
     </div>
   </section>
 
@@ -250,7 +251,7 @@
         <label class="f"><span>Почта</span><input type="email" data-site="email"></label>
       </div>
       <label class="f"><span>Подпись на заставке (новая строка = перенос)</span><textarea data-site="tagline" data-br></textarea></label>
-      <label class="f"><span>Ссылка для «contact» и «написать» в ценах (Telegram, WhatsApp, почта)</span><input type="text" data-site="contact" placeholder="https://t.me/username"></label>
+      <label class="f"><span>Ссылка для «contact» и «заказать» (WhatsApp: https://wa.me/77011234567 — номер с 7, без +; Telegram: https://t.me/username)</span><input type="text" data-site="contact" placeholder="https://t.me/username"></label>
       <div class="f"><span>Обо мне — текст. Пустая строка = новый абзац. <b>**жирный**</b>, <i>_курсив_</i>, строка с «- » = пункт списка, ссылки станут кликабельными</span>
         <div class="fmtbar"><button data-fmt="b" title="жирный"><b>Ж</b></button><button data-fmt="i" title="курсив"><i>К</i></button><button data-fmt="li" title="пункт списка">• пункт</button><button data-fmt="p" title="новый абзац">¶ абзац</button></div>
         <textarea data-site="about" data-paras id="aboutArea" style="min-height:140px"></textarea></div>
@@ -1111,6 +1112,15 @@ $$('#stPeriod button').forEach(b => b.onclick = () => {
   if (stData && stData.configured) renderStats();
 });
 $('#stReload').onclick = loadStats;
+$('#stReset').onclick = async () => {
+  if (!confirm('Обнулить всю статистику (посещения, страны, клики)? Это нельзя отменить.')) return;
+  const r = await fetch('/admin/stats/reset', { method: 'POST', credentials: 'same-origin' }).catch(() => null);
+  if (!r || !r.ok) { alert('Не получилось: ' + (r ? await r.text() : 'нет связи')); return; }
+  loadStats();
+};
+// this browser = the owner: the worker skips counting it (cookie "notrack")
+$('#stMe').checked = /(^|;\s*)notrack=1/.test(document.cookie);
+$('#stMe').onchange = e => { document.cookie = `notrack=${e.target.checked ? 1 : 0}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`; };
 $('#tabs [data-v="stats"]').addEventListener('click', () => { if (!stData) loadStats(); });
 
 // ---------- «как я работаю» (gear) ----------

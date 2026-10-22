@@ -577,8 +577,17 @@ async function vimeoMeta(url){
 }
 
 // ---------- data ----------
-async function loadData(){
+// admin preview: "?draft=1" is remembered for this tab and removed from the address bar
+const IS_DRAFT = (() => {
   if (new URLSearchParams(location.search).has('draft')) {
+    try { sessionStorage.setItem('portfolio-preview', '1'); } catch {}
+    history.replaceState(null, '', location.pathname + location.hash);
+    return true;
+  }
+  try { return sessionStorage.getItem('portfolio-preview') === '1'; } catch { return false; }
+})();
+async function loadData(){
+  if (IS_DRAFT) {
     try {
       const d = JSON.parse(localStorage.getItem('portfolio-draft'));
       // loops picked in the admin but not published yet live as blob: links while the admin tab is open
@@ -1036,7 +1045,7 @@ function setFilter(c, push){
   $$('#filters button').forEach(b => b.classList.toggle('on', b.dataset.c === filter));
   buildSpiral(); renderList();
   introSpin = 3;                                   // little re-shuffle spin
-  if (push) { setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter)); track('filter', filter); }
+  if (push) { setHash(filter === 'all' ? '' : catSlug(filter)); track('filter', filter); }
 }
 
 // ---------- list ----------
@@ -1087,7 +1096,7 @@ $('#priceBtn').onclick = () => openPrice();
 
 // ---------- what visitors click: counted per day/country by worker.js (not in the admin preview) ----------
 function track(kind, item = ''){
-  if (new URLSearchParams(location.search).has('draft') || !navigator.sendBeacon) return;
+  if (IS_DRAFT || !navigator.sendBeacon) return;
   try { navigator.sendBeacon('/hit', new Blob([kind + '|' + String(item).slice(0, 60)], { type: 'text/plain' })); } catch {}
 }
 
@@ -1243,7 +1252,7 @@ function updateNav(){
   const nb = $('#nextBtn'); clearTimeout(updateNav.t); nb.classList.remove('hint');
   if (!nb.disabled) { nb.classList.add('hint'); updateNav.t = setTimeout(() => nb.classList.remove('hint'), 2600); }
 }
-const hashOf = (p, i) => 'p/' + encodeURIComponent(p.id) + (i ? '/' + (i + 1) : '');
+const hashOf = (p, i) => p.id + (i ? '/' + (i + 1) : '');
 
 function openPlayer(p, idx = 0){
   if (!p) return;
@@ -1316,7 +1325,7 @@ function closePlayer(){
   if (player.classList.contains('fsx')) exitFs();
   player.classList.remove('on', 'paused', 'ended'); body.classList.remove('playing'); cur.classList.remove('on');
   setTimeout(() => { if (!player.classList.contains('on')) { $('#player .media').innerHTML = ''; ctrl.iframe = ctrl.video = null; } }, 600);
-  setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter));
+  setHash(filter === 'all' ? '' : catSlug(filter));
 }
 function setMuted(m){
   ctrl.muted = m;
@@ -1519,16 +1528,20 @@ async function morphOpen(p, x, y){
   morphing = false;
 }
 
-// ---------- deep links: #p/<id> opens a video, #c/<category> filters ----------
-function setHash(h){ history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); }
+// ---------- deep links: #qfitness (or #qfitness/2) opens a work, #rilsy filters a category ----------
+// Cyrillic category names become latin in the address bar ("рилсы" → "rilsy"), so links stay readable
+const TR = { а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+  ә:'a',ғ:'g',қ:'q',ң:'n',ө:'o',ұ:'u',ү:'u',һ:'h',і:'i' };
+const catSlug = c => String(c).toLowerCase().split('').map(ch => TR[ch] ?? ch).join('').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'c';
+function setHash(h){ history.replaceState(null, '', h ? '#' + h : location.pathname); }
 function applyHash(){
-  const h = decodeURIComponent(location.hash.slice(1));
-  if (h.startsWith('c/')) setFilter(h.slice(2));
-  if (h.startsWith('p/')) {
-    const [id, n] = h.slice(2).split('/');
-    const p = PROJECTS.find(x => x.id === id);
-    if (p) openPlayer(p, (parseInt(n, 10) || 1) - 1);
-  }
+  const h = decodeURIComponent(location.hash.slice(1)).replace(/^[pc]\//, '');   // older links: #p/… #c/…
+  if (!h) return;
+  const [id, n] = h.split('/');
+  const p = PROJECTS.find(x => x.id === id);
+  if (p) { openPlayer(p, (parseInt(n, 10) || 1) - 1); return; }
+  const cat = (DATA.categories || []).find(c => c === h || catSlug(c) === h);
+  if (cat) setFilter(cat);
 }
 
 function blocked(){
@@ -1565,13 +1578,14 @@ addEventListener('keydown', e => {
   else if (SITE.enterMute) $('#intro [data-sound="0"]').textContent = SITE.enterMute;
   // visitor stats (countries, visits per day/week/month) — Cloudflare Web Analytics, no cookies;
   // skipped in admin preview so your own checks don't count
-  if (SITE.cfToken && !new URLSearchParams(location.search).has('draft')) {
+  if (SITE.cfToken && !IS_DRAFT) {
     const s = document.createElement('script');
     s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
     s.setAttribute('data-cf-beacon', JSON.stringify({ token: SITE.cfToken }));
     document.head.appendChild(s);
   }
   $('#tagline').innerHTML = SITE.tagline || '';
+  if (SITE.contact) SITE.contact = SITE.contact.trim().replace(/^(https?:\/\/wa\.me\/)\+?8(\d{10})\b/, '$17$2').replace(/^(https?:\/\/wa\.me\/)\+/, '$1');
   $('#aboutTxt').innerHTML = (SITE.about || []).map(richPara).join('');
   $('#aboutName').textContent = SITE.name || '';
   if (SITE.role) { $('#aboutRole').textContent = SITE.role; $('#aboutRole').hidden = false; }
@@ -1580,7 +1594,8 @@ addEventListener('keydown', e => {
   $('#aboutCta').onclick = () => track('order', 'обо мне');
   $$('.mail').forEach(a => { a.textContent = SITE.email || ''; a.href = 'mailto:' + (SITE.email || ''); });
   $$('.socials').forEach(d => d.innerHTML = (SITE.socials || []).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(''));
-  $('#priceText').textContent = (SITE.priceText || 'цены • пакеты • ').repeat(3);
+  const ring = (SITE.priceText || 'цены • пакеты').trim().replace(/\s*[•·]\s*$/, '');
+  $('#priceText').textContent = (ring + ' • ').repeat(3);
   $('#orderBtn').href = SITE.contact || 'mailto:' + (SITE.email || '');
   $('#orderBtn').onclick = () => track('order', 'свой проект');
   $('#pOrder').href = SITE.contact || 'mailto:' + (SITE.email || '');
