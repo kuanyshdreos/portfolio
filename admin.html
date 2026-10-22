@@ -186,6 +186,7 @@
     </div>
     <div class="box">
       <h2>Как я работаю — техника, софт, процесс</h2>
+      <label class="inline" style="margin:0 0 12px;font-size:14px;font-weight:600"><input type="checkbox" id="gearShow"> показывать этот блок на сайте</label>
       <p class="hint" style="margin:-6px 0 8px">Отдельная страница в окне цен (кнопка «как я работаю»). Позиции одной группы стоят рядом, группа подписана плашкой на карточке. Если пусто — кнопки на сайте не будет.</p>
       <div class="tips">
         <b>Какие фото выбирать, чтобы смотрелось дорого</b>
@@ -798,6 +799,9 @@ function renderSite(){
   });
   renderSocials();
   renderBrand();
+  // on/off switch for the «my stack» block (on unless switched off)
+  $('#gearShow').checked = D.site.gearShow !== false;
+  $('#gearShow').onchange = e => { D.site.gearShow = e.target.checked; changed(); };
 }
 // formatting buttons: wrap the selected words or insert a list item / paragraph break
 $$('.fmtbar button').forEach(b => b.onclick = e => {
