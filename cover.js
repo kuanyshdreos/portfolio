@@ -55,6 +55,7 @@
     // (the category is already in the pill, so it isn't repeated here)
     const clip = t => (t = String(t || '').trim()).length > 64 ? t.slice(0, 61).replace(/\s+\S*$/, '') + '…' : t;
     const sub = clip(p.brand ? p.title : p.desc);
+    const n = (p.more || []).filter(m => m && m.vimeo).length + 1, count = '▶ ' + n + (n % 10 === 1 && n % 100 !== 11 ? ' ролик' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? ' ролика' : ' роликов');
     const vertical = p.format === '9:16';
 
     // background: blurred frame, or an accent gradient
@@ -82,6 +83,7 @@
       }
       const L = 96, colW = (frame ? fx : W) - L - 70;
       if (p.category) pill(x, p.category, L, 110, accent);
+      if (n > 1) pill(x, count, L, p.category ? 172 : 110, '#fff');
       let y = 330;
       if (logo) { logoBox(x, logo, L, y - 40, Math.min(colW, 330), 130); y += 170; }
       x.fillStyle = '#fff';
@@ -97,6 +99,7 @@
         rounded(x, m, fy, fw, fh, 26); x.fillStyle = '#000'; x.fill(); x.restore();
         x.save(); rounded(x, m, fy, fw, fh, 26); x.clip(); drawCover(x, frame, m, fy, fw, fh); x.restore();
       }
+      if (n > 1) pill(x, count, m + 24, fy + 24, '#fff');
       const rowY = frame ? fy + fh + 44 : H / 2 - 50, rowH = 96;
       let X = m;
       if (logo) X += logoBox(x, logo, m, rowY, 220, rowH) + 30;

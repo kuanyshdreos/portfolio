@@ -71,7 +71,7 @@ export default {
       let item = rest.join('|');
       if (!rest.length) { item = kind; kind = 'video'; }            // older pages sent just the video id
       item = item.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 64);
-      if (HIT_KINDS.has(kind) && (kind !== 'video' || /^[a-z0-9-]{1,64}$/.test(item)))
+      if (HIT_KINDS.has(kind) && (kind !== 'video' || /^[a-z0-9-]{1,64}(\/\d{1,3})?$/.test(item)))
         ctx.waitUntil(count(env, request, kind, item).catch(() => {}));
       return new Response(null, { status: 204 });
     }
@@ -79,8 +79,8 @@ export default {
     if (!ADMIN_PATH.test(url.pathname)) {
       let res = await env.ASSETS.fetch(request);
       // short client links: /qfitness → opens that work (/#p/qfitness); only when no real file has that name
-      const short = /^\/([a-z0-9-]{1,64})\/?$/.exec(url.pathname);
-      if (short && res.status === 404) return Response.redirect(`${url.origin}/#p/${short[1]}`, 302);
+      const short = /^\/([a-z0-9-]{1,64})(?:\/(\d{1,3}))?\/?$/.exec(url.pathname);
+      if (short && res.status === 404) return Response.redirect(`${url.origin}/#p/${short[1]}${short[2] ? "/" + short[2] : ""}`, 302);
       // a real page visit: the home page loaded as a document (not the admin's preview)
       const isPage = request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')
         && (request.headers.get('Accept') || '').includes('text/html') && !url.searchParams.has('draft') && res.ok;
