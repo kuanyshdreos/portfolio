@@ -1031,7 +1031,8 @@ function frame(now){
 
     v3.copy(m.position).applyMatrix4(group.matrixWorld).project(camera);
     // cards going round the back count as far away, ramping smoothly instead of switching at the side
-    d.dist = Math.hypot(v3.x * camera.aspect, v3.y) + (1 - smooth(-.35, .35, Math.cos(t))) * 3;
+    d.dist = Math.hypot(v3.x * camera.aspect, v3.y) + (1 - smooth(-.35, .35, Math.cos(t))) * 3
+      + (LAY.ring && Math.abs(t) > 2.6 ? 10 : 0);   // phone ring: hidden cards a full turn away sit on the same spot — never count them as the one in the middle
     if (!best || d.dist < best.userData.dist) best = m;
 
     // crisp in the central zone (about two cards), blur + mosaic elsewhere and while spinning fast
