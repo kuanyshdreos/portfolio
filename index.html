@@ -926,8 +926,13 @@ let capP = null;
 function updateRingCap(){
   const el = $('#ringCap');
   const p = centerCard && centerCard.userData.p;
+  // the caption that is up stays while its card is roughly in the middle (a finger nudge doesn't hide it);
+  // a new one appears only once the card has arrived — on phones also only after the finger let go and the ring stopped,
+  // so cards passed on the way during a swipe never flash their names
+  const keep = p === capP && el.classList.contains('on');
+  const settled = !LAY.ring || (!dragging && Math.abs(scroll - scrollT) < .06);
   const show = (LAY.ring || isTouch) && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
-    && Math.abs(Math.sin(centerCard.userData.t)) < (p === capP && el.classList.contains('on') ? .6 : .2);   // appears once the card has arrived; a small nudge of the finger doesn't hide it again
+    && (keep ? Math.abs(Math.sin(centerCard.userData.t)) < .6 : Math.abs(Math.sin(centerCard.userData.t)) < .2 && settled);
   if (p !== capP && p) {
     // fade the old caption out completely, then swap the text: no half-visible jumps between two cards
     if (el.classList.contains('on')) { el.classList.remove('on'); $('#tapHint').classList.remove('on'); return; }
