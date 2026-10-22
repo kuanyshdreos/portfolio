@@ -38,7 +38,7 @@
     {
       "id": "shet-l-studios",
       "title": "SHETÉL STUDIOS",
-      "desc": "Обзорное видео для уличного бренда одежды",
+      "desc": "Обзорное видео - для уличного бренда одежды",
       "category": "speedramp",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238408328",
@@ -54,7 +54,7 @@
     {
       "id": "qfitness",
       "title": "Qfitness",
-      "desc": "Таргетный рилс для фитнес клуба",
+      "desc": "Таргетный рилс - для фитнес клуба",
       "category": "таргет",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238058732",
@@ -70,7 +70,7 @@
     {
       "id": "project-one",
       "title": "Adal Rehab",
-      "desc": "Экспертный рилс для оздоровительного центра",
+      "desc": "Экспертный рилс - для оздоровительного центра",
       "category": "экспертное",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238068556",
@@ -118,7 +118,7 @@
     {
       "id": "project-four",
       "title": "Hakimage",
-      "desc": "Обзорное видео для бренда изделий из натуральной кожи ",
+      "desc": "Обзорное видео - для бренда изделий из натуральной кожи ",
       "category": "разное",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238411173",
@@ -156,7 +156,7 @@
     {
       "id": "project-six",
       "title": "GoodLario",
-      "desc": "Экспертное видео для бренда - GoodLario",
+      "desc": "Экспертный ролик - для компании по продаже пептидов",
       "category": "экспертное",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238411291",
@@ -172,7 +172,7 @@
     {
       "id": "project-seven",
       "title": "SOUND.SPACE",
-      "desc": "SpeedRamp видео для бренда SOUND.SPACE",
+      "desc": "Обзорное видео - для звукозаписывающей студии",
       "category": "speedramp",
       "format": "9:16",
       "vimeo": "https://vimeo.com/1238411424",
@@ -188,9 +188,9 @@
     {
       "id": "project-eight",
       "title": "Don Corleone Mafia",
-      "desc": "Таргетный ролик для бренда - Don Corleone Mafia",
+      "desc": "Таргетный рилс - для развлекательного бренда",
       "category": "таргет",
-      "format": "9:16",
+      "format": "16:9",
       "vimeo": "https://vimeo.com/1238411990",
       "loop": "",
       "thumb": "https://i.vimeocdn.com/video/2215553121-ff621c3b95cac5157e618e424a88b630a0d50e8339600c6da19b5e3339f23d2a-d_1280?region=us",
