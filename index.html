@@ -252,7 +252,7 @@
   #clients{position:fixed;left:150px;right:150px;bottom:26px;z-index:11;height:40px;overflow:hidden;display:none;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
   #clients.on{display:block}
-  body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0;pointer-events:none}
+  body.ring.noroom #clients,body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0;pointer-events:none}
   #clients{transition:opacity .4s;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
   #clients .track{display:flex;align-items:center;gap:72px;padding-right:72px;width:max-content;height:100%;animation:marquee var(--dur,40s) linear infinite}
   #clients:hover .track{animation-play-state:paused}
@@ -263,7 +263,7 @@
   #clients .cl:hover{opacity:1}
   #clients .cl img{height:30px;max-width:140px;width:auto;object-fit:contain;filter:brightness(0) invert(1)}
   #clients .cl span{font-size:15px;letter-spacing:.02em;white-space:nowrap}
-  #ringCap{position:fixed;left:16px;right:16px;bottom:calc(100% - var(--capBottom,30%));z-index:11;text-align:center;pointer-events:none;
+  #ringCap{position:fixed;left:16px;right:16px;top:var(--capTop,140px);z-index:11;text-align:center;pointer-events:none;
     opacity:0;transform:translateY(8px);filter:blur(6px);transition:opacity .45s,transform .5s var(--out),filter .45s;text-transform:none}
   #ringCap.on{opacity:1;transform:none;filter:none}
   #ringCap .n{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-variant-numeric:tabular-nums;margin-bottom:6px}
@@ -814,21 +814,31 @@ function resize(){
   if (camera.aspect < 1 && w < 700) {      // only phones get the single ring; tablets keep the spiral
     LAY.R = 3.4; LAY.cs = .72; LAY.ring = true; body.classList.add('ring');
     camera.position.z = LAY.R + (3 * LAY.cs) / (.88 * 2 * tan * camera.aspect);
-    // vertical spot: halfway between the filters at the top and the price button at the bottom
+    // layout from the top down: filters → caption (fixed height, never under the filters) → card → hint
     const top = $('#filters').getBoundingClientRect().bottom || 100;
     const bottom = $('#priceBtn').getBoundingClientRect().top || h - 110;
-    const cy = (top + bottom) / 2, ndc = 1 - 2 * cy / h;
+    let halfCard = (2.25 * LAY.cs / 2) / ((camera.position.z - LAY.R) * tan) * (h / 2);
+    const capTop = top + 16, CAP_H = 122;                    // number + title + tag + two lines of text
+    // short screens (small iPhones, browser bars shown): the card shrinks so caption, card and hint all fit
+    const room = bottom - (capTop + CAP_H + 14) - 70;        // 70 = gap + "tap to watch" hint under the card
+    if (2 * halfCard > room && room > 120) {
+      const k = room / (2 * halfCard);
+      camera.position.z = LAY.R + (camera.position.z - LAY.R) / k;
+      halfCard *= k;
+    }
+    // the card sits halfway down, but always below the caption
+    const cy = Math.max((top + bottom) / 2, capTop + CAP_H + 14 + halfCard), ndc = 1 - 2 * cy / h;
     LAY.ringY = ndc * (camera.position.z - LAY.R) * tan;
-    // caption sits right under the centered card
-    const halfCard = (2.25 * LAY.cs / 2) / ((camera.position.z - LAY.R) * tan) * (h / 2);
-    document.documentElement.style.setProperty('--capBottom', Math.round(cy - halfCard - 14) + 'px');
+    document.documentElement.style.setProperty('--capTop', Math.round(capTop) + 'px');
     document.documentElement.style.setProperty('--hintTop', Math.round(cy + halfCard + 16) + 'px');
-    const mid = (cy + halfCard + bottom) / 2 + 20;           // free space: under the card (+ its hint), above the price button
+    // brands: in the middle of what is left between the hint and the price button; hidden if there is no room
+    const hintBottom = cy + halfCard + 16 + 40, mid = (hintBottom + bottom) / 2;
     $('#clients').style.bottom = Math.round(h - mid - 16) + 'px';
+    body.classList.toggle('noroom', bottom - hintBottom < 44);
   } else {
     // the card crossing the center takes ~42% of the screen width (a portrait tablet: ~60%, big cards, the spiral may run past the edges like the reference)
     LAY.R = 3.4; LAY.cs = .72; LAY.ring = false; body.classList.remove('ring');
-    if (isTouch) document.documentElement.style.setProperty('--capBottom', Math.round(($('#filters').getBoundingClientRect().bottom || 90) + 110) + 'px');
+    if (isTouch) document.documentElement.style.setProperty('--capTop', Math.round(($('#filters').getBoundingClientRect().bottom || 90) + 16) + 'px');
     $('#clients').style.bottom = '';
     camera.position.z = LAY.R + (3 * LAY.cs) / ((camera.aspect < 1 ? .6 : .42) * 2 * tan * camera.aspect);
   }
