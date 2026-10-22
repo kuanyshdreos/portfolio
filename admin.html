@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Админка портфолио</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
-<link rel="icon" href="data:,">
+<link rel="icon" id="favicon" href="favicon.svg">
 <style>
   :root{ --bg:#f4f4f2; --card:#fff; --ink:#151515; --muted:#7a7a7a; --line:#e3e3e0; --acc:#17c964; --danger:#e5484d; --r:12px; }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -977,6 +977,7 @@ function tab(v){ $(`#tabs [data-v="${v}"]`).click(); }
 function renderBrand(){
   $('#logoPrev').style.backgroundImage = D.site.logo ? `url('${resolve(D.site.logo)}')` : 'radial-gradient(circle at 30% 30%,#3cff8f,#1fd1ff 55%,#111)';
   $('#favPrev').style.backgroundImage = `url('${D.site.favicon ? resolve(D.site.favicon) : 'favicon.svg'}')`;
+  $('#favicon').href = D.site.favicon ? resolve(D.site.favicon) : 'favicon.svg';   // the admin tab shows the same icon as the site
   $('#photoPrev').style.backgroundImage = D.site.photo ? `url('${resolve(D.site.photo)}')` : 'none';
 }
 // resize, keep transparency, new file name each time so browsers don't show a cached old one

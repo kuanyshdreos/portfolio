@@ -66,6 +66,7 @@
   header>*{pointer-events:auto}
   #filters{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);overflow-x:auto;scrollbar-width:none;white-space:nowrap}
   #filters::-webkit-scrollbar{display:none}
+  @media (min-width:701px){ #filters{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 300px)} }   /* tablets + computers: exactly in the middle of the screen */
   #filters button{transition:color .3s}
   #filters button.on,#filters button:hover{color:var(--fg)}
   #filters i{width:4px;height:4px;border-radius:50%;background:#555;flex:none}
@@ -255,7 +256,7 @@
   #clients{position:fixed;left:150px;right:150px;bottom:26px;z-index:11;height:40px;overflow:hidden;display:none;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
   #clients.on{display:block}
-  body.ring.noroom #clients,body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0;pointer-events:none}
+  body.ring.noroom #clients,body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0!important;visibility:hidden;pointer-events:none;transition:opacity .4s,visibility 0s .4s}   /* !important: the entrance animation would otherwise keep it visible */
   #clients{transition:opacity .4s;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
   #clients .track{display:flex;align-items:center;gap:72px;padding-right:72px;width:max-content;height:100%;animation:marquee var(--dur,40s) linear infinite}
   #clients:hover .track{animation-play-state:paused}
@@ -451,7 +452,14 @@
       background:linear-gradient(transparent,rgba(10,10,10,.92) 30%,#0a0a0a 60%)}
     body.has-clients.listview::after,body.has-clients.playing::after{display:none}
     header{flex-wrap:wrap}
-    #filters{order:3;width:100%}
+    #filters{order:3;width:100%;justify-content:safe center;padding:2px 0}   /* phone: categories centred */
+    /* list view: the bar stays solid while works scroll under it, categories become clear pills */
+    body.listview header{background:linear-gradient(#0a0a0a 78%,rgba(10,10,10,0));padding-bottom:22px}
+    body.listview #filters{gap:6px}
+    body.listview #filters i{display:none}
+    body.listview #filters button{padding:7px 13px;border-radius:18px;background:#1c1c1c;color:#aaa;flex:none}
+    body.listview #filters button.on{background:linear-gradient(135deg,var(--g1),var(--g2));color:#06210f;font-weight:600}
+    body.listview #list{padding-top:140px}
     #viewBtn{display:inline-flex}
     #list{padding-top:110px}
     #priceBtn{width:68px;height:68px;left:10px} #priceBtn .ic{inset:20px;font-size:15px;border-radius:9px}
