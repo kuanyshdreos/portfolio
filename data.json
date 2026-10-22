@@ -2,7 +2,10 @@
   "site": {
     "name": "kuanyshvfx",
     "tagline": "Воплащаю ваши идеи в реальность!",
-    "about": [],
+    "about": [
+      "Полный цикл: от монтажа до sfx",
+      "• 1FIT, DKNY, POPTOY | Опыт 3 года"
+    ],
     "email": "",
     "contact": "https://wa.me/87471888274",
     "socials": [
@@ -22,7 +25,7 @@
     "enterSound": "войти со звуком",
     "enterMute": "без звука",
     "gearTitle": "Мой стек",
-    "photo": ""
+    "photo": "brand/photo-mvjok082.jpg"
   },
   "categories": [
     "экспертное",
