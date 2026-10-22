@@ -268,6 +268,8 @@
   #ringCap.on{opacity:1;transform:none;filter:none}
   #ringCap .n{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-variant-numeric:tabular-nums;margin-bottom:6px}
   #ringCap b{display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
+  #ringCap .cat{display:inline-block;margin-top:7px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.04em;
+    background:var(--c,#3cff8f);color:#0a0a0a;text-transform:none}
   #ringCap small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:13px;line-height:1.35;height:2.7em;color:#8b8b8b;margin-top:3px;overflow:hidden;text-transform:none}   /* always 2 lines tall: the title stays put whether the text takes one line or two */
   /* tap hint under the card: a pulsing fingertip with ripples + swipe arrows */
   #tapHint{position:fixed;left:0;right:0;top:var(--hintTop,75%);z-index:11;display:flex;justify-content:center;align-items:center;gap:12px;
@@ -523,7 +525,7 @@
     <text><textPath href="#circ" id="priceText"></textPath></text></svg>
   <span class="ic">✦</span>
 </button>
-<div id="ringCap" aria-live="polite"><span class="n"></span><b></b><small></small></div>
+<div id="ringCap" aria-live="polite"><span class="n"></span><b></b><span class="cat"></span><small></small></div>
 <div id="tapHint" aria-hidden="true"><div class="tap"><b></b><b></b><i></i></div><div class="txt">нажмите — смотреть<br>листайте <span><em>←</em><em>→</em></span></div></div>
 <div id="clients" aria-label="клиенты"><div class="track"></div></div>
 <button id="soundBtn" aria-label="звук">♪</button>
@@ -826,6 +828,7 @@ function resize(){
   } else {
     // the card crossing the center takes ~42% of the screen width (a portrait tablet: ~60%, big cards, the spiral may run past the edges like the reference)
     LAY.R = 3.4; LAY.cs = .72; LAY.ring = false; body.classList.remove('ring');
+    if (isTouch) document.documentElement.style.setProperty('--capBottom', Math.round(($('#filters').getBoundingClientRect().bottom || 90) + 110) + 'px');
     $('#clients').style.bottom = '';
     camera.position.z = LAY.R + (3 * LAY.cs) / ((camera.aspect < 1 ? .6 : .42) * 2 * tan * camera.aspect);
   }
@@ -913,7 +916,7 @@ let capP = null;
 function updateRingCap(){
   const el = $('#ringCap');
   const p = centerCard && centerCard.userData.p;
-  const show = LAY.ring && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
+  const show = (LAY.ring || isTouch) && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
     && Math.abs(Math.sin(centerCard.userData.t)) < (p === capP && el.classList.contains('on') ? .6 : .2);   // appears once the card has arrived; a small nudge of the finger doesn't hide it again
   if (p !== capP && p) {
     // fade the old caption out completely, then swap the text: no half-visible jumps between two cards
@@ -923,11 +926,13 @@ function updateRingCap(){
     const list = visibleProjects(), i = list.indexOf(p);
     $('.n', el).textContent = `${String(i + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}`;
     $('b', el).textContent = p.title;
-    $('small', el).textContent = [p.category, p.desc].filter(Boolean).join(' · ');
+    $('.cat', el).textContent = p.category || ''; $('.cat', el).hidden = !p.category;
+    $('.cat', el).style.setProperty('--c', p._accent || '#3cff8f');
+    $('small', el).textContent = p.desc || '';
   }
   if (p && p._accent && p._accent !== updateRingCap.acc) { updateRingCap.acc = p._accent; $('#ringBg').style.setProperty('--acc', p._accent); }   // phone backdrop follows the card in the middle
   el.classList.toggle('on', !!show && p === capP);
-  $('#tapHint').classList.toggle('on', !!show && !hintDone);
+  $('#tapHint').classList.toggle('on', !!show && LAY.ring && !hintDone);
 }
 let hintDone = false;
 let frameNo = 0, perfSum = 0, perfN = 0, pickTick = 0;
