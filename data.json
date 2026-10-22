@@ -7,7 +7,7 @@
       "• 1FIT, DKNY, POPTOY | Опыт 3 года"
     ],
     "email": "",
-    "contact": "https://wa.me/87471888274",
+    "contact": "https://wa.me/+77471888274",
     "socials": [
       {
         "label": "ig",
@@ -61,10 +61,10 @@
       "thumb": "https://i.vimeocdn.com/video/2215072938-f0879555e9553cc47dfde2af3aa6d067436fa2b5e82a2eaf4f2a3f51f17703d3-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "#a78bfa",
+      "accent": "#ffd23f",
       "cover": "",
       "more": [],
-      "_accent": "#a78bfa"
+      "_accent": "#ffd23f"
     },
     {
       "id": "project-one",
@@ -93,10 +93,10 @@
       "thumb": "https://i.vimeocdn.com/video/2215073931-4f5c10140ad8548cbeaf399e6a45af587ae289752c7f6f1d9aec6be5af7a9d76-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "#ffd23f",
+      "accent": "#3cff8f",
       "cover": "",
       "more": [],
-      "_accent": "#ffd23f"
+      "_accent": "#3cff8f"
     },
     {
       "id": "project-three",
@@ -109,10 +109,10 @@
       "thumb": "https://i.vimeocdn.com/video/2215536573-9733fd99b2e32a9aefa9a2a3e87ae810be81dc2cb5c0dd80b48e3f3547140984-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "#ffd23f",
+      "accent": "#3cff8f",
       "cover": "",
       "more": [],
-      "_accent": "#ffd23f"
+      "_accent": "#3cff8f"
     },
     {
       "id": "project-four",
@@ -125,10 +125,10 @@
       "thumb": "https://i.vimeocdn.com/video/2215555084-39dd546c5ecd54f0acbf95281fe5505541d7e24eb194359ed6e22a937d664f52-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "#ffd23f",
+      "accent": "#3cff8f",
       "cover": "",
       "more": [],
-      "_accent": "#ffd23f"
+      "_accent": "#3cff8f"
     },
     {
       "id": "project-five",
@@ -141,7 +141,7 @@
       "thumb": "https://i.vimeocdn.com/video/2215550426-7cb66048cd359b2d65322ddb69834adbd14293aa878230a747aea9fe8a22ba86-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "",
+      "accent": "#1fd1ff",
       "cover": "",
       "more": [
         {
@@ -150,7 +150,7 @@
           "thumb": "https://i.vimeocdn.com/video/2215552147-f1b319a81f2f9d652f12458962cf6006e004fa99dfe9cf79299fc10674cd456f-d_1280?region=us"
         }
       ],
-      "_accent": "#ffd23f"
+      "_accent": "#1fd1ff"
     },
     {
       "id": "project-six",
@@ -195,10 +195,10 @@
       "thumb": "https://i.vimeocdn.com/video/2215553121-ff621c3b95cac5157e618e424a88b630a0d50e8339600c6da19b5e3339f23d2a-d_1280?region=us",
       "brand": "",
       "logo": "",
-      "accent": "",
+      "accent": "#ffd23f",
       "cover": "",
       "more": [],
-      "_accent": "#3cff8f"
+      "_accent": "#ffd23f"
     }
   ],
   "packages": [
