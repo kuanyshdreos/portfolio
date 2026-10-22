@@ -914,7 +914,7 @@ function updateRingCap(){
   const el = $('#ringCap');
   const p = centerCard && centerCard.userData.p;
   const show = LAY.ring && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
-    && Math.abs(Math.sin(centerCard.userData.t)) < .2;      // only once the card has (nearly) arrived
+    && Math.abs(Math.sin(centerCard.userData.t)) < (p === capP && el.classList.contains('on') ? .6 : .2);   // appears once the card has arrived; a small nudge of the finger doesn't hide it again
   if (p !== capP && p) {
     // fade the old caption out completely, then swap the text: no half-visible jumps between two cards
     if (el.classList.contains('on')) { el.classList.remove('on'); $('#tapHint').classList.remove('on'); return; }
