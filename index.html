@@ -287,7 +287,8 @@
     background:#060606;
     opacity:0;visibility:hidden;transition:opacity .5s var(--out),visibility .5s}
   #player.on{opacity:1;visibility:visible}
-  #player .pbg{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(36px) saturate(1.3);opacity:.22;pointer-events:none}
+  #player .pbg{position:absolute;inset:-40px;opacity:.5;pointer-events:none;overflow:hidden}
+  #player .pbg canvas{width:100%;height:100%;display:block;filter:blur(18px) saturate(1.4)}
   #player .wrap{position:relative;display:flex;flex-direction:column;gap:12px;transform:translateY(24px) scale(.96);filter:blur(14px);opacity:0;
     transition:transform .7s var(--out),filter .6s var(--out),opacity .45s ease}
   #player.on .wrap{transform:none;filter:none;opacity:1}
@@ -320,6 +321,12 @@
   #player .x:hover{transform:rotate(90deg)}
   #player.fsx .frame{position:fixed;inset:0;z-index:60;width:100%!important;height:100%!important;border-radius:0;box-shadow:none}
   #player.fsx .snav,#player.fsx .porder{display:none!important}
+  html.ios #player .hit,html.ios #player .big{display:none}     /* iPhone: taps go to Vimeo's own player (sound needs that) */
+  html.ios #muteBtn{display:none!important}                      /* volume = the phone's buttons */
+  #player.fsx .poster{background-size:contain}              /* full screen: the end frame keeps its shape, nothing cut off */
+  #player.fsx .media>img{object-fit:contain}
+  @media (min-width:1800px){ header,#priceBtn,#soundBtn,#clients,#player .under,#player .x,#player .porder{zoom:1.15} }
+  @media (min-width:2200px){ header,#priceBtn,#soundBtn,#clients,#player .under,#player .x,#player .porder{zoom:1.35} .mcard{zoom:1.35;max-height:calc((100svh - 32px) / 1.35)} .panel{zoom:1.35;top:12px;bottom:12px;right:12px} }
   #player.fsx .x{z-index:70}
   #player .frame:fullscreen{width:100%!important;height:100%!important;border-radius:0;background:#000}
   #player .frame:-webkit-full-screen{width:100%!important;height:100%!important;border-radius:0;background:#000}
@@ -497,10 +504,10 @@
 <button id="soundBtn" aria-label="звук">♪</button>
 
 <section id="player">
-  <div class="pbg"></div>
+  <div class="pbg"><canvas width="24" height="24"></canvas></div>
   <div class="wrap">
     <div class="frame">
-      <div class="media"></div><div class="poster"></div><div class="hit"></div><div class="big">▶</div>
+      <div class="media"></div><div class="poster"></div><div class="hit"></div><div class="big"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></div>
       <div class="nextup" id="nextUp"><svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span class="nu-t"></span><button class="nu-now">сейчас</button><button class="nu-x" aria-label="отмена">×</button></div>
     </div>
     <div class="bar"><i></i><u></u></div>
@@ -523,7 +530,7 @@
 <div id="cur"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="cover.js?v=5"></script>
+<script src="cover.js?v=6"></script>
 <script>
 /* Контент сайта лежит в data.json — редактируйте его через admin.html */
 
@@ -532,6 +539,8 @@ const isVid = s => /\.(mp4|webm|mov)(\?|#|$)/i.test(s || '');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const body = document.body;
 const isTouch = matchMedia('(hover:none)').matches;
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (IOS) document.documentElement.classList.add('ios');
 // "1 ролик / 2 ролика / 5 роликов"
 const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
 const TAP = 1;                                  // blur kernel radius: 3×3 samples everywhere (spaced wider, same softness)
@@ -746,6 +755,7 @@ const visibleProjects = () => PROJECTS.filter(p => filter === 'all' || p.categor
 
 function resize(){
   const w = innerWidth, h = innerHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   dirty = true;
   camera.aspect = w / h;
@@ -825,9 +835,10 @@ function pick(){
 
 // click on a card: a black circle grows from the click, then the player opens
 let spin = .3, stepClock = 0;
-const STEP_HOLD = 2.6;                         // phone ring: seconds a card stays in the center
+const STEP_HOLD = 4;                         // phone ring: seconds a card stays in the center
 canvas.addEventListener('click', e => {
-  if (moved >= 6 || blocked()) return;
+  if (moved >= (isTouch ? 14 : 6) || blocked()) return;
+  setMouse(e);
   const m = pick(); if (!m) return;
   blip(440, .12);
   morphOpen(m.userData.p, e.clientX, e.clientY);
@@ -905,7 +916,7 @@ function frame(now){
       if (!ringOver) stepClock += dt; else stepClock = Math.min(stepClock, STEP_HOLD - .6);
       if (stepClock > STEP_HOLD && !calm) { stepClock = 0; scrollT = Math.round(scrollT / TURN) * TURN + TURN; }
     } else stepClock = 0;
-    if (!dragging) scrollT += (Math.round(scrollT / TURN) * TURN - scrollT) * E(.12);   // settle on the nearest card
+    if (!dragging) scrollT += (Math.round(scrollT / TURN) * TURN - scrollT) * E(.06);   // settle on the nearest card
   } else {
     spin += ((idle && !hovered && !calm && now > pauseUntil ? SPIN : 0) - spin) * E(.06);
     if (idle) { scrollT += dt * spin + (hovered ? 0 : flingV * dt * 60); flingV *= hovered ? 0 : Math.pow(.92, dt * 60); }
@@ -955,6 +966,7 @@ function frame(now){
     // crisp in the central zone (about two cards), blur + mosaic elsewhere and while spinning fast
     const goal = m === hovered ? 0 : Math.max(smooth(FOCUS, FOCUS + .35, d.dist), speed * .75);
     d.focus += (goal - d.focus) * E(.14);
+    if (!Number.isFinite(d.focus)) d.focus = 1;          // self-heal: one bad frame must never leave a card black
     const off = d.focus;
     // mosaic starts with very fine cells (barely visible) and coarsens gradually — no visible jump
     u.uPix.value = off > .15 ? 160 - (off - .15) / .85 * 125 : 0;
@@ -1154,7 +1166,8 @@ function playerAspect(){
 function fitFrame(){
   const vw = innerWidth, vh = innerHeight, mobile = vw < 700, a = playerAspect();
   const padX = mobile ? 12 : (isTouch ? 100 : 80), top = mobile ? 60 : 64;
-  const under = (mobile ? 92 : 90) + 26;          // + breathing room under the controls
+  const z = parseFloat(getComputedStyle($('#player .under')).zoom) || 1;   // the control row is scaled up on big monitors
+  const under = (mobile ? 92 : 90) * z + 26;          // + breathing room under the controls
   const w = Math.max(120, Math.min(vw - padX * 2, (vh - top - under) * a)), h = w / a;
   const f = $('#player .frame');
   f.style.width = w + 'px'; f.style.height = h + 'px';
@@ -1162,6 +1175,18 @@ function fitFrame(){
   player.classList.toggle('inside', (vw - w) / 2 < (isTouch ? 84 : 300));   // wide (horizontal) video: no room beside it, buttons go on its edges
   $('#player .wrap').style.width = w + 'px';
   $('#player .wrap').style.marginTop = Math.max(0, 2 * top - vh + h + under) + 'px';   // frame starts exactly `top` from the screen edge
+}
+function paintBackdrop(src){
+  const c = $('#player .pbg canvas'), x = c.getContext('2d');
+  x.fillStyle = '#060606'; x.fillRect(0, 0, 24, 24);
+  if (!src) return;
+  const im = new Image();
+  im.onload = () => {
+    if (paintBackdrop.src !== src) return;               // another clip was opened meanwhile
+    const a = im.width / im.height, w = a > 1 ? 24 * a : 24, h = a > 1 ? 24 : 24 / a;   // cover
+    x.drawImage(im, (24 - w) / 2, (24 - h) / 2, w, h);
+  };
+  paintBackdrop.src = src; im.src = src;
 }
 function updateMeta(){
   const p = ctrl.p, c = ctrl.clip, n = ctrl.clips.length;
@@ -1205,13 +1230,13 @@ function loadClip(i){
   clearEnd(); player.classList.remove('ended');
   const th = clipThumb(p, c) || thumbOf(p);
   $('#player .poster').style.backgroundImage = `url("${th}")`;
-  $('#player .pbg').style.backgroundImage = `url("${th}")`;
+  paintBackdrop(th);
   const media = $('#player .media'), vi = vimeoInfo(c.vimeo);
   setBar(0);
   if (vi) {
     ctrl.kind = 'vimeo';
     // with sound: opening is a click, so the browser allows it; if it still refuses, the first tap unmutes
-    const q = new URLSearchParams({ api: 1, autoplay: 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
+    const q = new URLSearchParams({ api: 1, autoplay: IOS ? 0 : 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: IOS ? 1 : 0 });
     if (vi.hash) q.set('h', vi.hash);
     media.innerHTML = `<iframe src="https://player.vimeo.com/video/${vi.id}?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     ctrl.iframe = $('iframe', media);
@@ -1406,7 +1431,7 @@ async function closeWithWipe(x = innerWidth / 2, y = innerHeight / 2){
 }
 $('#player .x').onclick = e => closeWithWipe(e.clientX, e.clientY);
 // click on the dark area around the video closes it
-player.addEventListener('click', e => { if (e.target === player || e.target.classList.contains('pbg')) closeWithWipe(e.clientX, e.clientY); });
+player.addEventListener('click', e => { if (e.target === player || e.target.closest('.pbg')) closeWithWipe(e.clientX, e.clientY); });
 
 // ---------- circle transition (same idea as the menu) ----------
 const wipe = $('#wipe');

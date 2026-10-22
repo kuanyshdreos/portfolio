@@ -55,7 +55,7 @@
     // (the category is already in the pill, so it isn't repeated here)
     const clip = t => (t = String(t || '').trim()).length > 64 ? t.slice(0, 61).replace(/\s+\S*$/, '') + '…' : t;
     const sub = clip(p.brand ? p.title : p.desc);
-    const n = (p.more || []).filter(m => m && m.vimeo).length + 1, count = '▶ ' + n + (n % 10 === 1 && n % 100 !== 11 ? ' ролик' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? ' ролика' : ' роликов');
+    const n = (p.more || []).filter(m => m && m.vimeo).length + 1, count = '\u25B6\uFE0E ' + n + (n % 10 === 1 && n % 100 !== 11 ? ' ролик' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? ' ролика' : ' роликов');
     const vertical = p.format === '9:16';
 
     // background: blurred frame, or an accent gradient
