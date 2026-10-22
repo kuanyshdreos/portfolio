@@ -268,7 +268,7 @@
   #ringCap.on{opacity:1;transform:none;filter:none}
   #ringCap .n{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-variant-numeric:tabular-nums;margin-bottom:6px}
   #ringCap b{display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
-  #ringCap small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:13px;line-height:1.35;color:#8b8b8b;margin-top:3px;overflow:hidden;text-transform:none}
+  #ringCap small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:13px;line-height:1.35;height:2.7em;color:#8b8b8b;margin-top:3px;overflow:hidden;text-transform:none}   /* always 2 lines tall: the title stays put whether the text takes one line or two */
   /* tap hint under the card: a pulsing fingertip with ripples + swipe arrows */
   #tapHint{position:fixed;left:0;right:0;top:var(--hintTop,75%);z-index:11;display:flex;justify-content:center;align-items:center;gap:12px;
     pointer-events:none;opacity:0;transition:opacity .5s;text-transform:none}
@@ -317,7 +317,6 @@
   #player .frame{position:relative;overflow:hidden;border-radius:14px;background:#000;box-shadow:0 40px 120px rgba(0,0,0,.65)}
   #player .media,#player .media>*{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;object-fit:cover}
   #player .hit{position:absolute;inset:0;z-index:2;cursor:none}
-  #player.tapvimeo .hit{pointer-events:none}          /* iPhone: the first tap goes to the video itself (sound) */
   #player.novideo .hit,#player.novideo .bar{cursor:default}
   #player .big{position:absolute;left:50%;top:50%;z-index:3;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;
     background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center;font-size:24px;pointer-events:none;
@@ -565,7 +564,6 @@ const isVid = s => /\.(mp4|webm|mov)(\?|#|$)/i.test(s || '');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const body = document.body;
 const isTouch = matchMedia('(hover:none)').matches;
-const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 // "1 ролик / 2 ролика / 5 роликов"
 const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
 const TAP = 1;                                  // blur kernel radius: 3×3 samples everywhere (spaced wider, same softness)
@@ -1164,7 +1162,7 @@ addEventListener('message', e => {
   if (!d || !(d.event || d.method)) return;
   ctrl.alive = true;
   if (d.event === 'ready') vSubscribe();
-  if (d.event === 'play') { ctrl.paused = false; player.classList.remove('tapvimeo'); }
+  if (d.event === 'play') ctrl.paused = false;
   if (d.event === 'pause') ctrl.paused = true;
   if (d.event === 'ended' || d.event === 'finish') finishVideo();
   // vimeo reports progress as "playProgress" (older protocol) or "timeupdate"
@@ -1282,7 +1280,7 @@ function openPlayer(p, idx = 0){
 function loadClip(i){
   const p = ctrl.p, c = ctrl.clip = ctrl.clips[i];
   ctrl.idx = i; ctrl.paused = true; ctrl.dur = 0; ctrl.t = 0; ctrl.muted = false; ctrl.ended = false; ctrl.iframe = ctrl.video = null;
-  clearEnd(); player.classList.remove('ended', 'tapvimeo');
+  clearEnd(); player.classList.remove('ended');
   const th = clipThumb(p, c) || thumbOf(p);
   $('#player .poster').style.backgroundImage = `url("${th}")`;
   paintBackdrop(th);
@@ -1292,11 +1290,10 @@ function loadClip(i){
   if (vi) {
     ctrl.kind = 'vimeo';
     // with sound: opening is a click, so the browser allows it; if it still refuses, the first tap unmutes
-    const q = new URLSearchParams({ api: 1, autoplay: IOS ? 0 : 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
+    const q = new URLSearchParams({ api: 1, autoplay: 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
     if (vi.hash) q.set('h', vi.hash);
     media.innerHTML = `<iframe src="https://player.vimeo.com/video/${vi.id}?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     ctrl.iframe = $('iframe', media);
-    player.classList.toggle('tapvimeo', IOS);          // iPhone: wait for a tap inside the video (see .tapvimeo)
     // the player inside the iframe starts listening some time after load: keep subscribing until it answers
     ctrl.alive = false;
     const frameRef = ctrl.iframe;
@@ -1416,7 +1413,12 @@ player.addEventListener('pointermove', e => {
 });
 player.addEventListener('pointerleave', () => cur.classList.remove('on'));
 let swiped = false;
-$('#player .hit').onclick = () => { if (swiped) { swiped = false; return; } if (ctrl.kind !== 'none') toggle(); };
+$('#player .hit').onclick = () => {
+  if (swiped) { swiped = false; return; }
+  if (ctrl.kind === 'none') return;
+  if (!ctrl.paused && ctrl.muted) { setMuted(false); return; }   // phones start muted: the first tap turns the sound on instead of pausing
+  toggle();
+};
 {
   // swipe left/right on the video = next/previous clip
   let s = null;
