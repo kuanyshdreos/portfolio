@@ -1,0 +1,229 @@
+{
+  "site": {
+    "name": "kuanyshvfx",
+    "tagline": "монтажёр и моушн-дизайнер<br>ваш город",
+    "about": [
+      "Пара предложений о себе: кто вы и что делаете.",
+      "Клиенты, инструменты, опыт — коротко."
+    ],
+    "email": "",
+    "contact": "https://t.me/lamedymusic",
+    "socials": [
+      {
+        "label": "ig",
+        "url": "https://www.instagram.com/kuanyshvfx/"
+      },
+      {
+        "label": "tg",
+        "url": "https://t.me/lamedymusic"
+      }
+    ],
+    "priceText": "цены • пакеты",
+    "cfToken": "cfabab7924784291b9f6b48d87eb6e07",
+    "logo": "",
+    "favicon": "",
+    "enterSound": "войти со звуком",
+    "enterMute": "без звука",
+    "gearTitle": "Мой стек"
+  },
+  "categories": [
+    "рилсы",
+    "реклама",
+    "клипы"
+  ],
+  "projects": [
+    {
+      "id": "qfitness",
+      "title": "Qfitness",
+      "desc": "Рилс для фитнес-клуба",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "https://vimeo.com/1238058732",
+      "loop": "",
+      "thumb": "https://i.vimeocdn.com/video/2215072938-f0879555e9553cc47dfde2af3aa6d067436fa2b5e82a2eaf4f2a3f51f17703d3-d_1280?region=us",
+      "brand": "",
+      "logo": "",
+      "accent": "#3cff8f",
+      "cover": ""
+    },
+    {
+      "id": "project-one",
+      "title": "Adal Rehab",
+      "desc": "вфывфыв",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "https://vimeo.com/1238068556",
+      "loop": "",
+      "thumb": "https://i.vimeocdn.com/video/2215072678-06e4b69a518abe06d68db23706ba98c891c9b523396e3315cedce0e9c3f4bb20-d_1280?region=us",
+      "brand": "",
+      "logo": "",
+      "accent": "#3cff8f",
+      "cover": ""
+    },
+    {
+      "id": "project-two",
+      "title": "Al Dente Trattoria Italiana",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "https://vimeo.com/1238070886",
+      "loop": "",
+      "thumb": "https://i.vimeocdn.com/video/2215073931-4f5c10140ad8548cbeaf399e6a45af587ae289752c7f6f1d9aec6be5af7a9d76-d_1280?region=us",
+      "brand": "",
+      "logo": "",
+      "accent": "#3cff8f",
+      "cover": ""
+    },
+    {
+      "id": "project-three",
+      "title": "Project Three",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "клипы",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    },
+    {
+      "id": "project-four",
+      "title": "Project Four",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    },
+    {
+      "id": "project-five",
+      "title": "Project Five",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "реклама",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    },
+    {
+      "id": "project-six",
+      "title": "Project Six",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "рилсы",
+      "format": "9:16",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    },
+    {
+      "id": "project-seven",
+      "title": "Project Seven",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "реклама",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    },
+    {
+      "id": "project-eight",
+      "title": "Project Eight",
+      "desc": "Коротко: что за работа и ваша роль.",
+      "category": "клипы",
+      "format": "16:9",
+      "vimeo": "",
+      "loop": "",
+      "thumb": "",
+      "brand": "",
+      "logo": "",
+      "accent": "",
+      "cover": ""
+    }
+  ],
+  "packages": [
+    {
+      "name": "🟢 Базовый",
+      "price": "200 000 ₸ / месяц",
+      "items": [
+        "15 роликов",
+        "2 выезда",
+        "Монтаж, SFX, субтитры, базовая цветокоррекция",
+        "1 правка"
+      ],
+      "note": "Срок сдачи: до 5 рабочих дней после каждой съёмки. Первые ролики через 48 часов",
+      "hot": false
+    },
+    {
+      "name": "🔵 Стандарт",
+      "price": "300 000 ₸ / месяц",
+      "items": [
+        "4 выезда",
+        "Монтаж, SFX, субтитры, цветокоррекция",
+        "2 правки"
+      ],
+      "note": "Срок сдачи: еженедельно, партиями по 7–8 роликов. До 5 рабочих дней после съёмки",
+      "period": "в месяц",
+      "videos": "30 роликов",
+      "badge": "самый популярный",
+      "hot": true
+    },
+    {
+      "name": "🟣 Объём",
+      "price": "500 000 ₸ / месяц",
+      "items": [
+        "40–45 роликов",
+        "До 6 выездов",
+        "Всё, что входит в «Стандарт»",
+        "Приоритетные сроки"
+      ],
+      "note": "Срок сдачи: приоритетный, до 4 рабочих дней после съёмки. Первые ролики через 24 часа",
+      "badge": "новинка"
+    }
+  ],
+  "clients": [],
+  "gear": [
+    {
+      "group": "камера",
+      "name": "DJI OSMO POKET 4",
+      "note": "",
+      "img": ""
+    },
+    {
+      "group": "свет",
+      "name": "ULANZI",
+      "note": "",
+      "img": ""
+    },
+    {
+      "group": "звук",
+      "name": "DJI MIC MINI 2 / DJI MIC 3",
+      "note": "",
+      "img": ""
+    },
+    {
+      "group": "компьютер",
+      "name": "Macbook M2 Pro 14 - 2023 / Мощный ПК",
+      "note": "",
+      "img": ""
+    }
+  ]
+}

@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Портфолио</title>
+<link rel="icon" id="favicon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap&subset=cyrillic">
+<style>
+  :root{ --bg:#0a0a0a; --fg:#f2f2f2; --paper:#f7f7f7; --ink:#111; --muted:#8b8b8b; --accent:#3cff8f;
+    --ease:cubic-bezier(.7,0,.2,1); --out:cubic-bezier(.2,.8,.2,1); --g1:#3cff8f; --g2:#1fd1ff; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);
+    font-family:"Manrope","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-transform:lowercase}
+  a{color:inherit;text-decoration:none}
+  /* interface is lowercase by style; your own texts from the admin keep their capitals */
+  #tagline,#aboutTxt,#list .row h3,#list .row small,#player .meta,.mail{text-transform:none}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-transform:inherit}
+
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(#1a1a1a 1px,transparent 1px),linear-gradient(90deg,#1a1a1a 1px,transparent 1px);
+    background-size:44px 44px}
+  /* explicit size: a canvas is a replaced element, so inset:0 alone would show it at its (hi-dpi) buffer size */
+  canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;transition:opacity .5s}
+  canvas#gl.drag{cursor:grabbing}
+
+  @keyframes blurIn{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:blur(0)}}
+  .blur-in{animation:blurIn .9s var(--out) both}
+
+  .orb{width:64px;height:64px;border-radius:50%;flex:none;display:block;
+    background:radial-gradient(circle at 70% 25%, var(--g2), transparent 45%),
+               radial-gradient(circle at 30% 30%, var(--g1), transparent 55%),
+               radial-gradient(circle at 50% 85%, #fff 0, #555 25%, #111 60%);
+    box-shadow:0 0 40px -6px var(--g1);animation:hue 8s linear infinite}
+  .orb.sm{width:38px;height:38px;box-shadow:0 0 18px -4px var(--g1)}
+  .orb.brandlogo{background:center/contain no-repeat;box-shadow:none;animation:none;border-radius:0}
+  #intro .orb.brandlogo{width:min(160px,40vw);height:80px}
+  #home.brandlogo{width:auto;min-width:38px;max-width:120px;height:38px}
+  @keyframes hue{to{filter:hue-rotate(360deg)}}
+
+  /* ---------- intro ---------- */
+  #intro{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    transition:opacity .9s var(--ease),filter .9s var(--ease),visibility .9s}
+  #intro.gone{opacity:0;filter:blur(20px);visibility:hidden}
+  #intro p{text-align:center;font-size:17px;line-height:1.15}
+  #intro .enter{display:flex;gap:28px;font-size:13px;color:var(--muted);opacity:0;filter:blur(10px);transition:opacity .8s,filter .8s}
+  #intro.loaded .enter{opacity:1;filter:none}
+  #intro .enter button:hover{color:var(--fg)}
+  #intro .pct{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.06em;transition:opacity .5s}
+  #intro .pct i{position:relative;display:block;width:150px;height:2px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  #intro .pct i::after{content:"";position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--p,0));background:linear-gradient(90deg,var(--g1),var(--g2))}
+  #intro .pct span{min-width:32px}
+  #intro.loaded .pct{opacity:0;pointer-events:none}
+  #intro .slot{display:grid;place-items:center;min-height:24px}   /* the bar and the enter buttons share one spot: bar while loading, buttons after */
+  #intro .slot>*{grid-area:1/1}
+  #intro:not(.loaded) .enter{pointer-events:none}
+
+  /* ---------- top bar ---------- */
+  header{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 16px max(18px, env(safe-area-inset-left));pointer-events:none}
+  header>*{pointer-events:auto}
+  #filters{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+  #filters::-webkit-scrollbar{display:none}
+  #filters button{transition:color .3s}
+  #filters button.on,#filters button:hover{color:var(--fg)}
+  #filters i{width:4px;height:4px;border-radius:50%;background:#555;flex:none}
+  .right{display:flex;gap:8px;align-items:center}
+  #viewBtn{display:none;background:#222;border-radius:22px;height:34px;padding:0 12px;font-size:13px}
+  #menuBtn{background:#fff;color:var(--ink);border-radius:22px;height:34px;padding:0 12px 0 14px;display:flex;align-items:center;gap:8px;font-size:13px}
+  #menuBtn .dot{width:6px;height:6px;border-radius:50%;background:var(--ink)}
+
+  /* ---------- white panels that grow out of a dot ---------- */
+  #shade{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.66);opacity:0;visibility:hidden;transition:opacity .6s,visibility .6s}
+  body.panel-open #shade{opacity:1;visibility:visible}
+  .panel{position:fixed;top:16px;right:16px;bottom:16px;width:min(380px,calc(100vw - 32px));z-index:31;background:var(--paper);color:var(--ink);
+    border-radius:18px;padding:22px 26px;display:flex;flex-direction:column;
+    clip-path:circle(0 at var(--ox,calc(100% - 26px)) var(--oy,18px));transition:clip-path .8s var(--ease)}
+  .panel.on{clip-path:circle(150% at var(--ox,calc(100% - 26px)) var(--oy,18px))}
+  .panel .close{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:8px;font-size:13px;z-index:2}
+  .panel .close b{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:400;transition:transform .4s var(--ease)}
+  .panel .close:hover b{transform:rotate(90deg)}
+  .panel .fade{opacity:0;filter:blur(12px);transform:translateY(14px);transition:opacity .6s,filter .6s,transform .6s var(--out)}
+  .panel.on .fade{opacity:1;filter:none;transform:none}
+  #menu .links{margin:auto 0}
+  #menu .links a{display:block;font-size:clamp(44px,6vw,58px);line-height:1.02;letter-spacing:-.04em;transition:opacity .6s,filter .6s,transform .6s var(--out),color .3s}
+  #menu .links:hover a{color:#bbb} #menu .links a:hover{color:var(--ink)}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+  .socials{display:flex;gap:6px}
+  .socials a{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:10px;transition:transform .3s}
+  .socials a:hover{transform:scale(1.12)}
+  #about{overflow-y:auto;scrollbar-width:none}
+  #about::-webkit-scrollbar{display:none}
+  #about .ab{margin:auto 0;padding-top:34px;display:flex;flex-direction:column;gap:14px}
+  #about .ph{width:100%;max-height:44svh;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#eee}
+  #about .ph img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.06);transition:transform 1.4s var(--out)}
+  #about.on .ph img{transform:none}
+  #about .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#999}
+  #about h3{font-size:clamp(28px,3vw,34px);font-weight:500;letter-spacing:-.035em;line-height:1;text-transform:none}
+  #about .role{font-size:13px;color:#888;margin-top:-6px;text-transform:none}
+  #about .txt{font-size:clamp(16px,1.6vw,18px);line-height:1.4}
+  #about .txt p+p{margin-top:12px;color:#666;font-size:14px}
+  #about .cta{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:22px;padding:11px 18px;font-size:13px;margin-top:4px;transition:transform .3s}
+  #about .cta:hover{transform:scale(1.04)}
+  @media (max-height:700px){ #about .ph{max-height:30svh} #about .ab{gap:10px} }
+  #about .foot{margin-top:18px}
+
+  /* price popup: package cards → click one for its details */
+  #priceModal{position:fixed;inset:0;z-index:35;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.5);
+    opacity:0;visibility:hidden;transition:opacity .45s,visibility .45s}
+  #priceModal.on{opacity:1;visibility:visible}
+  .mcard{position:relative;background:var(--paper);color:var(--ink);border-radius:24px;width:min(1020px,100%);max-height:calc(100svh - 32px);
+    overflow-x:hidden;overflow-y:auto;padding:30px;transform:translateY(26px) scale(.96);filter:blur(10px);opacity:0;
+    transition:transform .6s var(--out),filter .5s var(--out),opacity .5s var(--out);text-transform:none}
+  #priceModal.on .mcard{transform:none;filter:none;opacity:1}
+  .mx{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-size:17px;z-index:2;transition:transform .4s var(--ease)}
+  .mx:hover{transform:rotate(90deg)}
+  .mview{transition:opacity .3s ease}
+  .mview.hide{display:none}
+  #pmDetail{max-width:760px;margin:0 auto}
+  .mview.enter{opacity:0}
+  .mcard h2{font-size:clamp(40px,6vw,60px);letter-spacing:-.045em;font-weight:400;line-height:1;margin:0 0 6px;text-transform:lowercase}
+  .mcard .sub{color:#888;font-size:14px;margin-bottom:22px}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px 14px;padding-top:12px;align-items:stretch}
+  .pcard{position:relative;background:#fff;border:1px solid #ececec;border-radius:22px;padding:24px 20px 20px;text-align:left;display:flex;flex-direction:column;gap:8px;cursor:pointer;
+    transition:transform .45s var(--out),box-shadow .45s var(--out),border-color .3s}
+  .pcard:hover{transform:translateY(-5px);box-shadow:0 22px 44px -18px rgba(0,0,0,.18);border-color:#ddd}
+  .pcard .badge{position:absolute;top:-12px;left:20px;z-index:1}
+  .badge{position:relative;white-space:nowrap;font-size:11px;font-weight:700;letter-spacing:.03em;padding:6px 12px;border-radius:20px;overflow:hidden;
+    background:linear-gradient(135deg,#3cff8f,#1fd1ff);color:#06210f;box-shadow:0 8px 22px -8px #3cff8f}
+  .badge.new{background:linear-gradient(135deg,#a78bfa,#ff6ec7);color:#fff;box-shadow:0 8px 22px -8px #a78bfa}
+  .badge.sale{background:linear-gradient(135deg,#ffb347,#ff4d4d);color:#fff;box-shadow:0 8px 22px -8px #ff7a3d}
+  .badge::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);
+    transform:translateX(-120%);animation:shine 2.8s ease-in-out infinite}
+  @keyframes shine{60%,100%{transform:translateX(120%)}}
+  .dbadge{display:inline-block;margin-bottom:10px}
+  .pcard .nm{font-size:12px;color:#888;letter-spacing:.08em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vids{align-self:flex-start;font-size:12px;padding:5px 10px;border-radius:20px;background:#111;color:#fff}
+  .pprice{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:2px}
+  .pcard .cost{font-size:clamp(30px,3.4vw,40px);overflow-wrap:anywhere;letter-spacing:-.045em;line-height:1}
+  .pcard .old{font-size:15px;color:#aaa;text-decoration:line-through}
+  .pcard .per{font-size:13px;color:#888}
+  .pcard .save{align-self:flex-start;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#e8fff1;color:#0a7a3d}
+  .pl{list-style:none;margin:8px 0 6px;display:grid;gap:7px;font-size:14px;line-height:1.35;color:#333}
+  .pl li{display:flex;gap:9px;align-items:flex-start}
+  .pl li::before{content:"✓";flex:none;width:18px;height:18px;border-radius:50%;background:#111;color:#fff;font-size:10px;display:grid;place-items:center;margin-top:1px}
+  .pl li.rest{color:#888}
+  .pl li.rest::before{content:"+";background:#ddd;color:#555}
+  .pact{margin-top:auto;display:grid;gap:6px;padding-top:12px}
+  .pbuy{display:flex;justify-content:center;align-items:center;border-radius:14px;padding:13px;font-size:14px;font-weight:600;background:#111;color:#fff;transition:transform .3s}
+  .pbuy:hover{transform:scale(1.03)}
+  .pmore{font-size:13px;color:#777;padding:6px;text-align:center}
+  .pmore:hover{color:#111}
+  .pcard.hot{color:#fff;transform:scale(1.03);z-index:1;border:2px solid transparent;
+    background:linear-gradient(#0d0d0d,#0d0d0d) padding-box,linear-gradient(135deg,#3cff8f,#1fd1ff,#a78bfa,#3cff8f) border-box;background-size:100% 100%,300% 300%;
+    animation:glow 6s linear infinite;box-shadow:0 30px 70px -26px rgba(60,255,143,.6)}
+  @keyframes glow{to{background-position:0 0,300% 0}}
+  .pcard.hot:hover{transform:scale(1.03) translateY(-5px)}
+  .pcard.hot .nm,.pcard.hot .per,.pcard.hot .pmore{color:#aaa}
+  .pcard.hot .old{color:#777}
+  .pcard.hot .vids{background:var(--accent);color:#111}
+  .pcard.hot .pl{color:#ddd}
+  .pcard.hot .pl li::before{background:var(--accent);color:#06210f}
+  .pcard.hot .pl li.rest{color:#999}
+  .pcard.hot .pl li.rest::before{background:#333;color:#aaa}
+  .pcard.hot .save{background:rgba(60,255,143,.16);color:#6dffa8}
+  .pcard.hot .pbuy{background:linear-gradient(135deg,var(--g1),var(--g2));color:#06210f}
+  .pcard.hot .pmore:hover{color:#fff}
+  .ptrust{margin-top:22px;text-align:center;font-size:13px;color:#777}
+  @media (max-width:700px){ .pcard.hot{transform:none;order:-1} .pcard.hot:hover{transform:translateY(-4px)} }
+  /* «как я работаю»: equipment & software cards grouped by kind */
+  .gearlink{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:10px;padding:16px 18px;border-radius:16px;
+    background:#fff;border:1px solid #ececec;font-size:15px;text-align:left;transition:transform .45s var(--out),box-shadow .45s var(--out)}
+  .gearlink:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(0,0,0,.07)}
+  .gearlink small{display:block;font-size:12px;color:#888;margin-top:2px}
+  .gearlink .ico{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:18px;flex:none}
+  /* «как я работаю»: light cards in the same style as the package cards */
+  .gearhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .gearhead .cnt{font-size:12px;color:#888;letter-spacing:.12em;text-transform:uppercase}
+  .ggroup{display:flex;align-items:center;gap:10px;margin:30px 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--h) 45% 36%)}
+  .ggroup::before{content:"";width:8px;height:8px;border-radius:50%;background:hsl(var(--h) 80% 55%)}
+  .ggroup::after{content:"";flex:1;height:1px;background:#e5e5e2}
+  .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .gitem{display:flex;flex-direction:column;background:#fff;border:1px solid #ececec;border-radius:22px;overflow:hidden;text-align:left;
+    opacity:0;transform:translateY(10px);animation:gIn .55s var(--out) forwards;transition:translate .45s var(--out),box-shadow .45s var(--out),border-color .3s}
+  .gitem:hover{translate:0 -5px;box-shadow:0 22px 44px -18px rgba(0,0,0,.2);border-color:#ddd}
+  @keyframes gIn{to{opacity:1;transform:none}}
+  .gitem .pic{aspect-ratio:4/3;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 35%,hsl(var(--h) 70% 97%),hsl(var(--h) 55% 90%))}
+  .gitem .pic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s var(--out)}
+  .gitem:hover .pic img{transform:scale(1.05)}
+  .gitem .pic.fit img{object-fit:contain;padding:16px}
+  .gitem .pic.none{display:grid;place-items:center}
+  .gitem .pic.none i{font-style:normal;font-size:54px;font-weight:600;color:hsl(var(--h) 45% 40%);opacity:.8}
+  .gitem .t{padding:14px 16px 16px;min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+  .gitem b{display:block;font-size:16px;font-weight:600;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+  .gitem .nt{font-size:13px;color:#888;line-height:1.4}
+  .gitem .go{margin-top:auto;padding-top:8px;font-size:12px;color:hsl(var(--h) 45% 36%)}
+  .gdet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:center;margin-top:6px}
+  .gdet .pic{aspect-ratio:1;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 35%,hsl(var(--h) 70% 97%),hsl(var(--h) 55% 88%));display:grid;place-items:center}
+  .gdet .pic img{width:100%;height:100%;object-fit:cover}
+  .gdet .pic.fit img{object-fit:contain;padding:22px}
+  .gdet .pic i{font-style:normal;font-size:96px;font-weight:600;color:hsl(var(--h) 45% 40%);opacity:.8}
+  .gdet .tag{display:inline-block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--h) 45% 32%);background:hsl(var(--h) 80% 92%);padding:5px 11px;border-radius:20px}
+  .gdet h2{margin:12px 0 8px;text-transform:none;font-size:clamp(30px,4vw,44px)}
+  .gdet .nt{font-size:16px;color:#555;line-height:1.5}
+  .gdet .dtext{margin-top:12px}
+  .gmore{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+  .gmore button{font-size:13px;padding:8px 14px;border-radius:20px;background:#fff;border:1px solid #e5e5e2;transition:border-color .3s,transform .3s}
+  .gmore button:hover{border-color:#111;transform:translateY(-2px)}
+  @media (max-width:640px){ .ggrid{grid-template-columns:repeat(2,1fr);gap:10px} .gitem .t{padding:11px 12px 13px} .gitem b{font-size:14px} .gdet{grid-template-columns:1fr} .gdet .pic{aspect-ratio:4/3} }
+  .back{font-size:13px;color:#666;margin-bottom:18px;display:flex;gap:6px}
+  .back:hover{color:var(--ink)}
+  .dcost{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 14px}
+  .dcost b{font-size:clamp(44px,7vw,68px);font-weight:400;letter-spacing:-.05em;line-height:1}
+  .dcost span{color:#888;font-size:16px}
+  .dcost .old{font-size:22px;color:#aaa;text-decoration:line-through}
+  .dcost .save{font-size:13px;font-weight:700;padding:5px 11px;border-radius:20px;background:#e8fff1;color:#0a7a3d}
+  .dlist{list-style:none;margin:18px 0;display:grid;gap:10px;font-size:16px}
+  .dlist li{display:flex;gap:10px;align-items:flex-start}
+  .dlist li::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:12px;display:grid;place-items:center;margin-top:1px}
+  .dtext{color:#555;font-size:15px;line-height:1.5;white-space:pre-line}
+  .dnote{font-size:13px;color:#888;margin-top:10px}
+  .order{display:flex;justify-content:center;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:16px;padding:16px;font-size:15px;margin-top:22px;transition:transform .3s}
+  .order:hover{transform:scale(1.015)}
+
+
+  /* ---------- corner buttons ---------- */
+  #priceBtn{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:12;width:104px;height:104px;border-radius:50%}
+  #priceBtn svg{position:absolute;inset:0;animation:rot 14s linear infinite}
+  #priceBtn text{fill:var(--fg);font-size:11.5px;letter-spacing:3px}
+  #priceBtn .ic{position:absolute;inset:30px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--ink);display:grid;place-items:center;font-size:20px;transition:transform .4s var(--ease)}
+  #priceBtn:hover .ic{transform:scale(1.12) rotate(-6deg)}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  /* brands you've worked with: a slow endless strip of white logos at the bottom */
+  #clients{position:fixed;left:150px;right:150px;bottom:26px;z-index:11;height:40px;overflow:hidden;display:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  #clients.on{display:block}
+  body.listview #clients,body.pricing #clients,body.playing #clients,body.panel-open #clients{opacity:0;pointer-events:none}
+  #clients{transition:opacity .4s;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  #clients .track{display:flex;align-items:center;gap:72px;padding-right:72px;width:max-content;height:100%;animation:marquee var(--dur,40s) linear infinite}
+  #clients:hover .track{animation-play-state:paused}
+  @keyframes marquee{to{transform:translateX(-50%)}}   /* the trailing padding = the gap, so -50% lands exactly on the second copy: no jump */
+  body.playing #soundBtn,body.playing #priceBtn{opacity:0;pointer-events:none}   /* the corner buttons sat on top of the player's full-screen button */
+  #clients .cl{height:100%;display:flex;align-items:center;flex:none;opacity:.42;transition:opacity .3s;cursor:default;text-transform:none}
+  #clients .cl.link{cursor:pointer}
+  #clients .cl:hover{opacity:1}
+  #clients .cl img{height:30px;max-width:140px;width:auto;object-fit:contain;filter:brightness(0) invert(1)}
+  #clients .cl span{font-size:15px;letter-spacing:.02em;white-space:nowrap}
+  #ringCap{position:fixed;left:16px;right:16px;bottom:calc(100% - var(--capBottom,30%));z-index:11;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);filter:blur(6px);transition:opacity .45s,transform .5s var(--out),filter .45s;text-transform:none}
+  #ringCap.on{opacity:1;transform:none;filter:none}
+  #ringCap .n{display:block;font-size:11px;letter-spacing:.14em;color:#777;font-variant-numeric:tabular-nums;margin-bottom:6px}
+  #ringCap b{display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ringCap small{display:block;font-size:13px;color:#8b8b8b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* tap hint under the card: a pulsing fingertip with ripples + swipe arrows */
+  #tapHint{position:fixed;left:0;right:0;top:var(--hintTop,75%);z-index:11;display:flex;justify-content:center;align-items:center;gap:12px;
+    pointer-events:none;opacity:0;transition:opacity .5s;text-transform:none}
+  #tapHint.on{opacity:1}
+  #tapHint .tap{position:relative;width:34px;height:34px;flex:none}
+  #tapHint .tap i{position:absolute;inset:11px;border-radius:50%;background:#fff;animation:tapDot 1.8s var(--out) infinite}
+  #tapHint .tap b,#tapHint .tap b+b{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);opacity:0;animation:tapRing 1.8s var(--out) infinite}
+  #tapHint .tap b+b{animation-delay:.3s}
+  @keyframes tapDot{0%,100%{transform:scale(1)}12%{transform:scale(.7)}30%{transform:scale(1)}}
+  @keyframes tapRing{0%{transform:scale(.3);opacity:0}12%{opacity:.9}70%,100%{transform:scale(1.25);opacity:0}}
+  #tapHint .txt{font-size:12px;color:#aaa;line-height:1.35}
+  #tapHint .txt span{display:inline-flex;gap:3px;color:#777;margin-left:4px}
+  #tapHint .txt span em{font-style:normal;animation:swipeL 1.8s ease-in-out infinite}
+  #tapHint .txt span em+em{animation-name:swipeR}
+  @keyframes swipeL{0%,100%{transform:none}50%{transform:translateX(-3px)}}
+  @keyframes swipeR{0%,100%{transform:none}50%{transform:translateX(3px)}}
+  #soundBtn{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:12;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;font-size:13px}
+
+  /* ---------- list view ---------- */
+  #list{position:fixed;inset:0;z-index:5;overflow-y:auto;padding:84px 18px 150px;opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s}
+  body.listview #list{opacity:1;visibility:visible}
+  body.listview canvas#gl{opacity:0;pointer-events:none}
+  .row{display:flex;gap:14px;align-items:center;padding:10px 0;border-top:1px solid #222}
+  .row:last-child{border-bottom:1px solid #222}
+  .row .th{width:104px;aspect-ratio:4/3;border-radius:8px;overflow:hidden;flex:none;background:#1a1a1a}
+  .row .th>*{width:100%;height:100%;object-fit:cover;display:block}
+  .row .th img[src=""]{opacity:0}
+  .row h3{font-size:22px;font-weight:500;letter-spacing:-.02em}
+  .row small{color:var(--muted);font-size:12px}
+
+  /* ---------- fullscreen player ---------- */
+  /* the frame takes the video's own shape (16:9, 9:16…); title, time and progress sit under it */
+  #player{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+    background:#060606;
+    opacity:0;visibility:hidden;transition:opacity .5s var(--out),visibility .5s}
+  #player.on{opacity:1;visibility:visible}
+  #player .pbg{position:absolute;inset:-40px;opacity:.5;pointer-events:none;overflow:hidden}
+  #player .pbg canvas{width:100%;height:100%;display:block;filter:blur(18px) saturate(1.4)}
+  #player .wrap{position:relative;display:flex;flex-direction:column;gap:12px;transform:translateY(24px) scale(.96);filter:blur(14px);opacity:0;
+    transition:transform .7s var(--out),filter .6s var(--out),opacity .45s ease}
+  #player.on .wrap{transform:none;filter:none;opacity:1}
+  #player .frame{position:relative;overflow:hidden;border-radius:14px;background:#000;box-shadow:0 40px 120px rgba(0,0,0,.65)}
+  #player .media,#player .media>*{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;object-fit:cover}
+  #player .hit{position:absolute;inset:0;z-index:2;cursor:none}
+  #player.novideo .hit,#player.novideo .bar{cursor:default}
+  #player .big{position:absolute;left:50%;top:50%;z-index:3;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;
+    background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center;font-size:24px;pointer-events:none;
+    opacity:0;transform:scale(.7);transition:opacity .3s,transform .4s var(--out)}
+  #player.paused .big{opacity:1;transform:none}
+  /* our own end screen: the video's preview frame, covering whatever Vimeo shows */
+  #player .poster{position:absolute;inset:0;z-index:1;background:#000 center/cover no-repeat;opacity:0;pointer-events:none;transition:opacity .4s ease}
+  #player.ended .poster{opacity:1}
+  #player .under{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;color:#fff;align-self:center;width:max(100%, min(440px, 100vw - 24px))}
+  #player .meta{min-width:0}
+  #player .meta b{display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .meta span{display:block;font-size:13px;color:#9a9a9a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .ctl{display:flex;align-items:center;gap:8px;flex:none}
+  #player .time{font-size:12px;color:#9a9a9a;font-variant-numeric:tabular-nums}
+  #player .ib{height:34px;min-width:34px;padding:0 12px;border-radius:17px;background:#fff;color:#111;font-size:12px;display:grid;place-items:center;transition:background .3s}
+  #player .ib:hover{background:#d9d9d9}
+  #player .ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+  #player .ib:disabled{opacity:.35}
+  #player .ib svg .fl{fill:currentColor;stroke:none}
+  #player .bar{position:relative;height:18px;display:flex;align-items:center;cursor:none;touch-action:none}
+  #player .bar i{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,.2);border-radius:3px}
+  #player .bar u{position:absolute;left:0;height:3px;width:0;background:#fff;border-radius:3px}
+  #player .x{position:absolute;top:16px;right:16px;z-index:4;width:40px;height:40px;border-radius:50%;background:#fff;color:var(--ink);font-size:18px;display:grid;place-items:center;transition:transform .4s var(--ease)}
+  #player .x:hover{transform:rotate(90deg)}
+  #player.fsx .frame{position:fixed;inset:0;z-index:60;width:100%!important;height:100%!important;border-radius:0;box-shadow:none}
+  #player.fsx .snav,#player.fsx .porder{display:none!important}
+  #player.fsx .poster{background-size:contain}              /* full screen: the end frame keeps its shape, nothing cut off */
+  #player.fsx .media>img{object-fit:contain}
+  @media (min-width:1800px){ header,#priceBtn,#soundBtn,#clients,#player .under,#player .x,#player .porder{zoom:1.15} }
+  @media (min-width:2200px){ header,#priceBtn,#soundBtn,#clients,#player .under,#player .x,#player .porder{zoom:1.35} .mcard{zoom:1.35;max-height:calc((100svh - 32px) / 1.35)} .panel{zoom:1.35;top:12px;bottom:12px;right:12px} }
+  #player.fsx .x{z-index:70}
+  #player .frame:fullscreen{width:100%!important;height:100%!important;border-radius:0;background:#000}
+  #player .frame:-webkit-full-screen{width:100%!important;height:100%!important;border-radius:0;background:#000}
+  #player .frame:fullscreen .media>*{object-fit:contain}
+  #player .empty{position:absolute;left:0;right:0;bottom:0;padding:14px;text-align:center;color:#ddd;font-size:13px;z-index:1;
+    background:linear-gradient(transparent,rgba(0,0,0,.6))}
+
+  /* several clips in one project: side buttons, dots, auto-next, end screen */
+  #player .hit{touch-action:pan-y}
+  /* prev / next clip inside the opened project (only when it has several clips):
+     computer (mouse) = big round buttons beside the video; phones and tablets = buttons in the control row */
+  #player .mnav{display:none;padding:0;width:34px}
+  #player.multi .mnav{display:grid}
+  @media (hover:hover) and (pointer:fine) and (min-width:1025px){ #player.multi .mnav{display:none} }
+  #player .snav{position:absolute;z-index:3;transform:translateY(-50%);display:none;align-items:center;gap:0;height:56px;padding:6px;border-radius:28px;
+    background:rgba(20,20,20,.7);color:#fff;line-height:1;transition:background .3s,transform .4s var(--out),opacity .35s}
+  #player .snav .ar{width:44px;height:44px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;flex:none}
+  #player .snav .ar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  #player .snav .lb{font-size:13px;line-height:1.25;text-align:left;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;transition:max-width .45s var(--out),opacity .3s,margin .3s}
+  #player .snav .lb{text-transform:none}
+  #player .snav .lb small{display:block;font-size:11px;color:#aaa;text-transform:lowercase}
+  #player .snav.next{left:calc(100% + 16px)}
+  #player .snav.prev{right:calc(100% + 16px);flex-direction:row-reverse}
+  #player.inside .snav.next{left:auto;right:12px;flex-direction:row-reverse}
+  #player.inside .snav.prev{right:auto;left:12px;flex-direction:row}
+  #player .snav:hover .lb,#player .snav.hint .lb{max-width:200px;opacity:1;margin:0 10px}
+  #player .snav:hover{background:rgba(20,20,20,.92);transform:translateY(-50%) scale(1.04)}
+  @media (hover:hover) and (pointer:fine) and (min-width:1025px){ #player.multi .snav{display:flex} }
+  #player .snav:disabled{opacity:.25;pointer-events:none}
+  #player .dots{display:flex;gap:6px;align-items:center}
+  #player .dots i{width:6px;height:6px;border-radius:50%;background:#555;transition:all .3s}
+  #player .dots i.on{width:18px;border-radius:4px;background:var(--accent)}
+  #player .dots i.done{background:#999}
+  #player .porder{position:absolute;top:16px;left:16px;z-index:4;height:40px;padding:0 18px;border-radius:20px;display:flex;align-items:center;font-size:14px;font-weight:600;
+    background:linear-gradient(135deg,var(--g1),var(--g2));color:#06210f;transition:transform .3s var(--out)}
+  #player .porder:hover{transform:scale(1.05)}
+  #player .nextup{position:absolute;left:12px;right:12px;bottom:14px;z-index:4;display:none;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:16px;background:rgba(10,10,10,.92);text-transform:none}
+  #player .nextup.on{display:flex;animation:fadeIn .4s var(--out)}
+  #player .nextup .ring{width:26px;height:26px;flex:none;transform:rotate(-90deg)}
+  #player .nextup circle{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:94;stroke-dashoffset:94}
+  #player .nextup.on circle{animation:ringfill 3s linear forwards}
+  @keyframes ringfill{to{stroke-dashoffset:0}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}}
+  #player .nu-t{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #player .nu-now{background:var(--accent);color:#06210f;border-radius:12px;padding:7px 12px;font-size:12px;font-weight:600;flex:none}
+  #player .nu-x{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);flex:none}
+  #player .endscreen{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    padding:72px 20px 28px;text-align:center;background:rgba(6,6,6,.92);text-transform:none;overflow-y:auto}
+  #player .endscreen.on{display:flex;animation:fadeIn .5s var(--out)}
+  .e-title{font-size:clamp(26px,5vw,44px);letter-spacing:-.03em;line-height:1.05}
+  .e-sub{font-size:13px;color:#888}
+  .e-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+  .e-again,.e-cta{border-radius:22px;padding:12px 22px;font-size:14px;display:inline-flex;align-items:center}
+  .e-again{background:rgba(255,255,255,.12)}
+  .e-cta{background:linear-gradient(135deg,var(--g1),var(--g2));color:#06210f;font-weight:600}
+  .e-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#777;margin-top:12px}
+  .e-more{display:flex;gap:10px;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:2px}
+  .e-card{flex:none;width:148px;text-align:left}
+  .e-card img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;display:block;background:#1b1b1b;transition:transform .4s var(--out)}
+  .e-card:hover img{transform:scale(1.03)}
+  .e-card b{display:block;font-size:13px;font-weight:500;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .e-card small{display:block;font-size:11px;color:#888;margin-top:2px}
+
+  #player.instant,#player.instant *{transition:none!important}
+  #player.morph .wrap{opacity:0;transform:none;filter:none;transition:none}
+  /* white dot that breathes while loading, then stretches into the video frame */
+  #ghost{position:fixed;z-index:56;pointer-events:none;display:none;background:#fff;
+    transition:left .62s var(--ease),top .62s var(--ease),width .62s var(--ease),height .62s var(--ease),border-radius .62s var(--ease),opacity .45s ease}
+  #ghost.on{display:block}
+  #ghost.instant{transition:none}
+  #ghost.fade{opacity:0}
+  #ghost.pulse{animation:dotPulse .9s ease-in-out infinite}
+  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.9);opacity:.45}}
+
+  /* black circle that grows from the click (opening) or from the close button (closing) */
+  #wipe{position:fixed;inset:0;z-index:55;pointer-events:none;clip-path:circle(0 at var(--x,50%) var(--y,50%));
+    transition:clip-path .75s var(--ease),opacity .5s ease;display:grid;place-items:center}
+  #wipe.in{clip-path:circle(150vmax at var(--x,50%) var(--y,50%));pointer-events:auto}
+  #wipe.out{opacity:0}
+  #wipe.instant{transition:none}
+
+  #cur{position:fixed;left:0;top:0;z-index:70;pointer-events:none;padding:5px 11px;border-radius:20px;font-size:14px;
+    background:var(--accent);color:var(--ink);transform:translate(-50%,-50%) scale(0);transition:transform .3s var(--out);white-space:nowrap}
+  #cur.on{transform:translate(-50%,-50%) scale(1)}
+
+  @media (max-width:700px){
+    /* phone: its own full-width line above the corner buttons instead of squeezing between them */
+    #clients{left:0;right:0;bottom:calc(88px + env(safe-area-inset-bottom));height:32px;
+      -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+    #clients .track{gap:46px;padding-right:46px}
+    #clients .cl{opacity:.5}
+    #clients .cl img{height:24px;max-width:104px}
+    #clients .cl span{font-size:13px}
+    /* soft dark fade at the bottom so the logos and corner buttons sit on a calm background */
+    body.has-clients::after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-index:10;pointer-events:none;
+      background:linear-gradient(transparent,rgba(10,10,10,.92) 30%,#0a0a0a 60%)}
+    body.has-clients.listview::after,body.has-clients.playing::after{display:none}
+    header{flex-wrap:wrap}
+    #filters{order:3;width:100%}
+    #viewBtn{display:block}
+    #list{padding-top:110px}
+    #priceBtn{width:68px;height:68px;left:10px} #priceBtn .ic{inset:20px;font-size:15px;border-radius:9px}
+    #priceBtn text{font-size:13px}
+    #player .wrap{gap:10px}
+    #player .meta b{font-size:17px}
+    #player .time{display:none}
+    #player .porder{top:max(12px, env(safe-area-inset-top));left:12px;height:36px;font-size:13px}
+    .e-card{width:128px}
+    #player .x{top:max(12px, env(safe-area-inset-top));right:12px}
+  }
+  @media (prefers-reduced-motion:reduce){ #clients .track,#priceBtn svg,.orb{animation:none!important} }
+  @media (hover:none){ #player .hit,#player .bar{cursor:auto} #cur{display:none} }
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="orb"></div>
+  <p id="tagline"></p>
+  <div class="slot"><div class="enter"><button data-sound="1">войти со звуком</button><button data-sound="0">без звука</button></div><div class="pct"><i></i><span>0%</span></div></div>
+</div>
+
+<canvas id="gl"></canvas>
+
+<header>
+  <a href="#" class="orb sm" id="home" aria-label="home"></a>
+  <nav id="filters"></nav>
+  <div class="right"><button id="viewBtn">список</button><button id="menuBtn">меню <span class="dot"></span></button></div>
+</header>
+
+<div id="shade"></div>
+<nav id="menu" class="panel">
+  <button class="close" data-close>закрыть <b>×</b></button>
+  <div class="links">
+    <a class="fade" href="#" data-go="works" style="transition-delay:.25s">работы</a>
+    <a class="fade" href="#" data-go="about" style="transition-delay:.3s">обо мне</a>
+    <a class="fade" href="#" data-go="price" style="transition-delay:.35s">цены</a>
+    <a class="fade" href="#" data-go="contact" style="transition-delay:.4s">контакты</a>
+  </div>
+  <div class="foot fade" style="transition-delay:.45s"><a class="mail"></a><div class="socials"></div></div>
+</nav>
+<section id="about" class="panel">
+  <button class="close" data-close>закрыть <b>×</b></button>
+  <div class="ab fade" style="transition-delay:.25s">
+    <div class="ph" id="aboutPh" hidden><img alt=""></div>
+    <span class="lbl">обо мне</span>
+    <h3 id="aboutName"></h3><span class="role" id="aboutRole" hidden></span>
+    <div class="txt" id="aboutTxt"></div>
+    <a class="cta" id="aboutCta" target="_blank" rel="noopener">обсудить проект →</a>
+  </div>
+  <div class="foot fade" style="transition-delay:.4s"><a class="mail"></a><div class="socials"></div></div>
+</section>
+<div id="priceModal" role="dialog" aria-modal="true" aria-label="цены">
+  <div class="mcard">
+    <button class="mx" aria-label="закрыть">×</button>
+    <div class="mview" id="pmList"><h2>цены</h2><p class="sub">выберите пакет — нажмите, чтобы увидеть подробности</p><div class="pgrid" id="pkgs"></div><p class="ptrust" id="ptrust" hidden></p>
+      <button class="gearlink" id="gearLink" hidden><span><b>как я работаю</b><small>техника, софт и процесс</small></span><span class="ico">→</span></button>
+      <a class="order" id="orderBtn" target="_blank" rel="noopener">обсудить свой проект →</a></div>
+    <div class="mview hide" id="pmGear"></div>
+    <div class="mview hide" id="pmGearItem"></div>
+    <div class="mview hide" id="pmDetail"></div>
+  </div>
+</div>
+
+<section id="list"></section>
+
+<button id="priceBtn" aria-label="цены">
+  <svg viewBox="0 0 104 104"><defs><path id="circ" d="M52,52 m-40,0 a40,40 0 1,1 80,0 a40,40 0 1,1 -80,0"/></defs>
+    <text><textPath href="#circ" id="priceText"></textPath></text></svg>
+  <span class="ic">✦</span>
+</button>
+<div id="ringCap" aria-live="polite"><span class="n"></span><b></b><small></small></div>
+<div id="tapHint" aria-hidden="true"><div class="tap"><b></b><b></b><i></i></div><div class="txt">нажмите — смотреть<br>листайте <span><em>←</em><em>→</em></span></div></div>
+<div id="clients" aria-label="клиенты"><div class="track"></div></div>
+<button id="soundBtn" aria-label="звук">♪</button>
+
+<section id="player">
+  <div class="pbg"><canvas width="24" height="24"></canvas></div>
+  <div class="wrap">
+    <div class="frame">
+      <div class="media"></div><div class="poster"></div><div class="hit"></div><div class="big"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></div>
+      <div class="nextup" id="nextUp"><svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span class="nu-t"></span><button class="nu-now">сейчас</button><button class="nu-x" aria-label="отмена">×</button></div>
+    </div>
+    <div class="bar"><i></i><u></u></div>
+    <button class="snav prev" id="prevBtn" aria-label="назад"><span class="ar"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span><span class="lb"><small>предыдущий ролик</small><span id="prevLbl"></span></span></button>
+    <button class="snav next" id="nextBtn" aria-label="дальше"><span class="ar"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></span><span class="lb"><small>следующий ролик</small><span id="nextLbl"></span></span></button>
+    <div class="under">
+      <div class="meta"><b></b><span></span></div>
+      <div class="ctl">
+        <span class="dots" id="dots"></span>
+        <span class="time"></span><button class="ib mnav" id="ctlPrev" aria-label="предыдущий ролик"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button class="ib mnav" id="ctlNext" aria-label="следующий ролик"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><button class="ib" id="muteBtn" aria-label="звук"></button><button class="ib" id="fsBtn" aria-label="на весь экран"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <a class="porder" id="pOrder" target="_blank" rel="noopener">заказать</a>
+  <button class="x" aria-label="закрыть">×</button>
+  <div class="endscreen" id="endScreen"></div>
+</section>
+<div id="wipe"></div>
+<div id="ghost"></div>
+<div id="cur"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="cover.js?v=6"></script>
+<script>
+/* Контент сайта лежит в data.json — редактируйте его через admin.html */
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const isVid = s => /\.(mp4|webm|mov)(\?|#|$)/i.test(s || '');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const body = document.body;
+const isTouch = matchMedia('(hover:none)').matches;
+// "1 ролик / 2 ролика / 5 роликов"
+const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
+const TAP = 1;                                  // blur kernel radius: 3×3 samples everywhere (spaced wider, same softness)
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;   // system setting "reduce motion"
+
+let DATA, SITE, PROJECTS = [], CATS = [], filter = 'all';
+
+// ---------- vimeo helpers ----------
+function vimeoInfo(url){
+  if (!url) return null;
+  const m = String(url).match(/vimeo\.com\/(?:video\/|channels\/[^/]+\/|groups\/[^/]+\/videos\/)?(\d+)(?:\/([0-9a-f]{6,}))?/i);
+  if (!m) return null;
+  const h = (String(url).match(/[?&]h=([0-9a-f]+)/i) || [])[1] || m[2] || '';
+  return { id: m[1], hash: h };
+}
+async function vimeoMeta(url){
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch('https://vimeo.com/api/oembed.json?width=1280&url=' + encodeURIComponent(url), { signal: ctl.signal });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+// ---------- data ----------
+async function loadData(){
+  if (new URLSearchParams(location.search).has('draft')) {
+    try {
+      const d = JSON.parse(localStorage.getItem('portfolio-draft'));
+      // loops picked in the admin but not published yet live as blob: links while the admin tab is open
+      if (d) { DRAFT_BLOBS = JSON.parse(localStorage.getItem('portfolio-draft-blobs') || '{}'); return d; }
+    } catch {}
+  }
+  const r = await fetch('data.json', { cache: 'no-cache' });
+  return r.json();
+}
+
+// ---------- tiny UI sounds ----------
+let audio = null, soundOn = false;
+function blip(freq = 660, dur = .06, vol = .04){
+  if (!soundOn) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + dur);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + dur);
+  } catch {}
+}
+document.addEventListener('pointerover', e => {
+  const el = e.target.closest('button,a');
+  if (el && !el.contains(e.relatedTarget)) blip(880, .04, .025);
+});
+// iPhone: the sound engine may only start inside a touch — wake it on the first ones
+['touchend', 'pointerup'].forEach(t => addEventListener(t, () => { if (soundOn && audio && audio.state !== 'running') audio.resume(); }, { passive: true }));
+function setSound(on){ soundOn = on; $('#soundBtn').textContent = on ? '♪' : '×'; }
+$('#soundBtn').onclick = () => { setSound(!soundOn); blip(520, .1); };
+
+// projects this visitor has already opened (kept on their device only)
+let seen = new Set();
+try { seen = new Set(JSON.parse(localStorage.getItem('portfolio-seen') || '[]')); } catch {}
+const markSeen = p => {
+  if (seen.has(p.id)) return;
+  seen.add(p.id); p._seen = 1;
+  try { localStorage.setItem('portfolio-seen', JSON.stringify([...seen])); } catch {}
+};
+
+// local files picked in the admin but not published yet (draft preview only)
+let DRAFT_BLOBS = {};
+const U = path => DRAFT_BLOBS[path] || path;
+const thumbOf = p => p._coverURL || U(p.thumb) || '';
+
+// ---------- three.js spiral ----------
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+let ratio = Math.min(devicePixelRatio, 1.5);       // 2x hi-dpi means 4x the pixels to shade; 1.5 looks the same on blurred cards
+renderer.setPixelRatio(ratio);
+let dirty = true;                                  // one extra draw is needed after a resize (it clears the canvas)
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, .1, 100);
+const group = new THREE.Group(); scene.add(group);
+
+// straight vertical helix as wide as the screen; ~3 rows visible, each row sloping with the pitch
+let TILT = .02;                               // desktop: how much the helix leans toward the camera
+const SPIN = .18;                           // idle rotation speed (radians per second)
+const TURN = .7, RISE = .42;                // angle step and height step per card (~9 per turn)
+// radius / card scale depend on the screen: wide spiral on desktop, narrow one on a portrait phone
+const LAY = { R: 5.8, cs: 1, ring: false, ringY: 0 };   // ring: one centered row instead of a helix (portrait phones)
+const BAND = .3;                            // visible height of the spiral (0..1 of half-screen) before cards fade out
+const FOCUS = .42;                          // radius of the crisp zone around screen center
+// every card is 4:3 like the original; any video (16:9, 9:16) is center-cropped into it
+const SIZE = { h: [3.0, 2.25], v: [3.0, 2.25] };
+function bentPlane(w, h){
+  const g = new THREE.PlaneGeometry(w, h, 16, 1);   // the bend only depends on x; fewer triangles also makes picking cheap
+  return g;
+}
+const GEO = { h: bentPlane(...SIZE.h), v: bentPlane(...SIZE.v) };
+
+const vert = `
+  varying vec2 vUv; uniform float uBend;
+  void main(){
+    vUv = uv; vec3 p = position;
+    p.z -= p.x * p.x * uBend;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+  }`;
+// cover-fit, pixel mosaic + blur when out of focus, rounded corners;
+// cover and hover video are cross-faded (uMix), and a freshly loaded cover fades in from dark (uReveal)
+const frag = `
+  varying vec2 vUv;
+  uniform sampler2D map, vmap;
+  uniform float uPix, uBlur, uOpacity, uDim, uTexAspect, uVAspect, uMix, uReveal, uSeen; uniform vec2 uSize;
+  float box(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.)) + min(max(q.x, q.y), 0.) - r; }
+  vec2 fit(vec2 uv, float ta, float ca){
+    if (ta > ca) uv.x = (uv.x - .5) * ca / ta + .5; else uv.y = (uv.y - .5) * ta / ca + .5;
+    return uv;
+  }
+  void main(){
+    float ca = uSize.x / uSize.y;
+    // cards turn continuously; on the far side we see the back face, so un-mirror it here
+    vec2 uv = gl_FrontFacing ? vUv : vec2(1. - vUv.x, vUv.y);
+    if (uPix > 0.) { vec2 g = vec2(uPix, uPix / ca); uv = (floor(uv * g) + .5) / g; }
+    vec2 uc = fit(uv, uTexAspect, ca), uvv = fit(uv, uVAspect, ca);
+    vec3 c = vec3(0.), v = vec3(0.);
+    if (uBlur < .0006) {
+      c = texture2D(map, clamp(uc, .001, .999)).rgb;
+      if (uMix > .001) v = texture2D(vmap, clamp(uvv, .001, .999)).rgb;
+      c = mix(c, v, uMix);
+    } else {
+      for (int x = -${TAP}; x <= ${TAP}; x++) for (int y = -${TAP}; y <= ${TAP}; y++) {
+        vec2 o = vec2(float(x), float(y)) * uBlur;
+        c += texture2D(map, clamp(uc + o, .001, .999)).rgb;
+        if (uMix > .001) v += texture2D(vmap, clamp(uvv + o, .001, .999)).rgb;
+      }
+      c = mix(c, v, uMix) / ${(2 * TAP + 1) ** 2}.;
+    }
+    float d = box((vUv - .5) * uSize, uSize * .5, .12);
+    float a = 1. - smoothstep(-.01, .01, d);
+    gl_FragColor = vec4(c * uDim * mix(.08, 1., uReveal) * (1. - .22 * uSeen), a * uOpacity);
+  }`;
+
+// per project: a 4:3 cover texture (uploaded photo or generated design) + optional loop video for hover
+let loaded = 0, toLoad = 0;
+const loadImg = src => new Promise(r => { if (!src) return r(null); const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+function setMap(p, tex, aspect){ p._mats.forEach(m => { m.uniforms.map.value = tex; m.uniforms.uTexAspect.value = aspect; }); }
+function prepareMedia(p){
+  p._mats = [];
+  p._rev = 0; p._mix = 0; p._ready = false; p._seen = p._seenV = seen.has(p.id) ? 1 : 0;
+  const blank = document.createElement('canvas'); blank.width = 4; blank.height = 3;
+  blank.getContext('2d').fillStyle = '#151515'; blank.getContext('2d').fillRect(0, 0, 4, 3);
+  p._tex = new THREE.CanvasTexture(blank); p._tex.minFilter = THREE.LinearFilter;
+  p._aspect = 4 / 3;
+  toLoad++;
+  let done = false; const finish = () => { if (!done) { done = true; loaded++; } };
+  setTimeout(finish, 8000);   // never let one slow file block the intro
+
+  (async () => {
+    let src = p.cover ? await loadImg(U(p.cover)) : null;
+    if (!src) src = await makeCover(p, U);
+    p._tex.image = src; p._tex.needsUpdate = true;
+    p._aspect = src.width / src.height;
+    setMap(p, p._tex, p._aspect);
+    p._ready = true;                              // frame loop fades the cover in
+    p._coverURL = src instanceof HTMLCanvasElement ? src.toDataURL('image/jpeg', .82) : src.src;
+    // the list may have been drawn before the cover was ready
+    $$('#list .row').filter(r => r.dataset.id === p.id).forEach(r => {
+      const el = $('.th img, .th video', r);
+      if (el) el.tagName === 'IMG' ? (el.src = p._coverURL) : (el.poster = p._coverURL);
+    });
+    finish();
+  })();
+
+  if (isVid(p.loop)) {
+    const v = document.createElement('video');
+    Object.assign(v, { muted: true, loop: true, playsInline: true, preload: 'auto', crossOrigin: 'anonymous' });
+    v.setAttribute('playsinline', '');
+    v.addEventListener('loadeddata', () => {
+      p._vidAspect = v.videoWidth / v.videoHeight;
+      p._mats.forEach(m => m.uniforms.uVAspect.value = p._vidAspect);
+    }, { once: true });
+    v.addEventListener('error', () => { p._video = null; }, { once: true });
+    v.src = U(p.loop);
+    p._video = v;
+    p._vidTex = new THREE.VideoTexture(v); p._vidTex.minFilter = THREE.LinearFilter;
+  }
+}
+
+let cards = [], COUNT = 0, span = 1;
+function buildSpiral(){
+  cards.forEach(m => { group.remove(m); m.material.dispose(); });
+  PROJECTS.forEach(p => p._mats = []);
+  cards = [];
+  const list = visibleProjects();
+  if (!list.length) { COUNT = 0; return; }
+  // whole copies keep the order at the wrap seam; 48+ cards make the helix long enough
+  // that cards wrap from bottom to top far outside the screen, never in view
+  COUNT = list.length * Math.max(1, Math.ceil(48 / list.length));
+  span = COUNT * TURN;
+  for (let i = 0; i < COUNT; i++) {
+    const p = list[i % list.length];
+    const kind = p.format === '9:16' ? 'v' : 'h';
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: vert, fragmentShader: frag, transparent: true, side: THREE.DoubleSide, depthWrite: false,
+      uniforms: { map: { value: p._tex }, vmap: { value: p._vidTex || p._tex }, uPix: { value: 0 }, uBlur: { value: 0 }, uOpacity: { value: 1 }, uDim: { value: 1 },
+        uBend: { value: .045 }, uTexAspect: { value: p._aspect }, uVAspect: { value: p._vidAspect || 16 / 9 },
+        uMix: { value: p._mix }, uReveal: { value: p._rev }, uSeen: { value: p._seenV }, uSize: { value: new THREE.Vector2(...SIZE[kind]) } },
+    });
+    p._mats.push(mat);
+    const m = new THREE.Mesh(GEO[kind], mat);
+    m.userData = { p, base: i * TURN, hover: 0, focus: 1, dist: 9, t: 0, baseBend: mat.uniforms.uBend.value };
+    group.add(m); cards.push(m);
+  }
+}
+const visibleProjects = () => PROJECTS.filter(p => filter === 'all' || p.category === filter);
+
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  dirty = true;
+  camera.aspect = w / h;
+  // landscape: the whole wide spiral in view. portrait phone: a narrower spiral and the camera placed
+  // so a card crossing the center fills ~88% of the screen width
+  const tan = Math.tan(THREE.MathUtils.degToRad(22.5));
+  if (camera.aspect < 1 && w < 700) {      // only phones get the single ring; tablets keep the spiral
+    LAY.R = 3.4; LAY.cs = .72; LAY.ring = true;
+    camera.position.z = LAY.R + (3 * LAY.cs) / (.88 * 2 * tan * camera.aspect);
+    // vertical spot: halfway between the filters at the top and the price button at the bottom
+    const top = $('#filters').getBoundingClientRect().bottom || 100;
+    const bottom = $('#priceBtn').getBoundingClientRect().top || h - 110;
+    const cy = (top + bottom) / 2, ndc = 1 - 2 * cy / h;
+    LAY.ringY = ndc * (camera.position.z - LAY.R) * tan;
+    // caption sits right under the centered card
+    const halfCard = (2.25 * LAY.cs / 2) / ((camera.position.z - LAY.R) * tan) * (h / 2);
+    document.documentElement.style.setProperty('--capBottom', Math.round(cy - halfCard - 14) + 'px');
+    document.documentElement.style.setProperty('--hintTop', Math.round(cy + halfCard + 16) + 'px');
+    const mid = (cy + halfCard + bottom) / 2 + 20;           // free space: under the card (+ its hint), above the price button
+    $('#clients').style.bottom = Math.round(h - mid - 16) + 'px';
+  } else {
+    // the card crossing the center takes ~42% of the screen width (a portrait tablet: ~60%, big cards, the spiral may run past the edges like the reference)
+    LAY.R = 3.4; LAY.cs = .72; LAY.ring = false;
+    $('#clients').style.bottom = '';
+    camera.position.z = LAY.R + (3 * LAY.cs) / ((camera.aspect < 1 ? .6 : .42) * 2 * tan * camera.aspect);
+  }
+  camera.updateProjectionMatrix();
+  if (player.classList.contains('on')) fitFrame();
+}
+
+// input: wheel screws along the spiral, drag rotates it (with inertia)
+let scroll = 0, scrollT = 0, rotX = 0, rotXT = 0, dragging = false, lastX = 0, lastY = 0, moved = 0, flingV = 0;
+const mouse = new THREE.Vector2(-9, -9);
+const setMouse = e => mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+addEventListener('wheel', e => { if (!blocked() && !body.classList.contains('listview')) scrollT += e.deltaY * .004; }, { passive: true });
+canvas.addEventListener('pointerdown', e => {
+  if (blocked()) return;
+  dragging = true; moved = 0; flingV = 0; lastX = e.clientX; lastY = e.clientY; canvas.classList.add('drag'); setMouse(e);
+  swipe = { x0: e.clientX, s0: scrollT };
+});
+let swipe = null, pauseUntil = 0, pauseTimer = 0, ringOver = false;
+// the pointer left the page: nothing is "under the cursor" any more
+document.addEventListener('pointerout', e => { if (!e.relatedTarget) mouse.set(-9, -9); });
+addEventListener('pointermove', e => {
+  setMouse(e);
+  cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px';
+  if (!dragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+  if (e.pointerType === 'touch') { const d = (LAY.ring ? -dx : dx - dy) * .009; scrollT += d; flingV = d; }
+  else { scrollT += dx * .007; flingV = dx * .007; rotXT = Math.max(-.4, Math.min(.4, rotXT + dy * .003)); }
+});
+addEventListener('pointerup', e => {
+  if (!dragging) return;
+  dragging = false; canvas.classList.remove('drag');
+  // ring: a swipe moves exactly one card in its direction (like stories)
+  if (LAY.ring && swipe && Math.abs(e.clientX - swipe.x0) > 30) {
+    scrollT = Math.round(swipe.s0 / TURN) * TURN + (e.clientX < swipe.x0 ? TURN : -TURN);
+    stepClock = 0;
+  }
+  swipe = null;
+  if (e.pointerType === 'touch' && LAY.ring) mouse.set(-9, -9);     // finger lifted: the ring moves on
+  // touch screen without a hover: the spiral holds still for a moment so a card can be looked at (and tapped)
+  if (e.pointerType === 'touch' && !LAY.ring) {
+    pauseUntil = performance.now() + 3500;
+    clearTimeout(pauseTimer); pauseTimer = setTimeout(() => mouse.set(-9, -9), 3500);
+  }
+});
+
+const ray = new THREE.Raycaster();
+function pick(){
+  if (!cards.length) return null;
+  ray.setFromCamera(mouse, camera);
+  const h = ray.intersectObjects(cards).find(h => h.object.material.uniforms.uOpacity.value > .4);
+  return h ? h.object : null;
+}
+
+// click on a card: a black circle grows from the click, then the player opens
+let spin = .3, stepClock = 0;
+const STEP_HOLD = 4;                         // phone ring: seconds a card stays in the center
+canvas.addEventListener('click', e => {
+  if (moved >= (isTouch ? 14 : 6) || blocked()) return;
+  setMouse(e);
+  const m = pick(); if (!m) return;
+  blip(440, .12);
+  morphOpen(m.userData.p, e.clientX, e.clientY);
+});
+
+let hovered = null, centerCard = null, playingVideo = null;
+function setHovered(m){
+  if (m === hovered) return;
+  hovered = m;
+  canvas.style.cursor = m ? 'pointer' : '';
+  // hover-play: the hovered project's cover cross-fades into its loop; the frame loop does the fading
+  // and pauses a loop only once it has fully faded back to the cover
+  const p = m && m.userData.p, v = p && p._video;
+  PROJECTS.forEach(q => { if (q !== p) q._hoverOn = false; });
+  playingVideo = v || null;
+  if (v) { p._hoverOn = true; v.play().catch(() => {}); }
+  if (m) blip(520 + (PROJECTS.indexOf(m.userData.p) % 8) * 40);
+}
+
+const v3 = new THREE.Vector3();
+const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+let t0 = performance.now(), introSpin = 8, prevScroll = 0, speed = 0;
+// phone ring: name, category and position of the card in the center
+let capP = null;
+function updateRingCap(){
+  const el = $('#ringCap');
+  const p = centerCard && centerCard.userData.p;
+  const show = LAY.ring && p && !blocked() && !body.classList.contains('listview') && $('#intro').classList.contains('gone')
+    && Math.abs(Math.sin(centerCard.userData.t)) < .2;      // only once the card has (nearly) arrived
+  if (p !== capP && p) {
+    capP = p;
+    const list = visibleProjects(), i = list.indexOf(p);
+    $('.n', el).textContent = `${String(i + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}`;
+    $('b', el).textContent = p.title;
+    $('small', el).textContent = [p.category, p.desc].filter(Boolean).join(' · ');
+  }
+  el.classList.toggle('on', !!show);
+  $('#tapHint').classList.toggle('on', !!show && !hintDone);
+}
+let hintDone = false;
+let frameNo = 0, perfSum = 0, perfN = 0, pickTick = 0;
+function frame(now){
+  // never negative (first rAF timestamp can predate t0) and never huge (tab was hidden) —
+  // otherwise the time-based easing below would overshoot and blow up
+  const raw = (now - t0) / 1000;
+  const dt = Math.max(0, Math.min(.05, raw)); t0 = Math.max(t0, now);
+
+  // nothing to animate while a panel, the prices, the player or the list covers the scene:
+  // skip all work (the last frame stays on screen) so overlays and hover effects run smoothly
+  if (player.classList.contains('on') || body.classList.contains('panel-open') || body.classList.contains('pricing') || body.classList.contains('listview')) {
+    if (hovered || playingVideo) {
+      PROJECTS.forEach(q => { q._hoverOn = false; q._mix = 0; if (q._video) q._video.pause(); });
+      hovered = null; playingVideo = null; canvas.style.cursor = '';
+    }
+    if (dirty) { renderer.render(scene, camera); dirty = false; }
+    updateRingCap();
+    requestAnimationFrame(frame);
+    return;
+  }
+
+  // slow machine? lower the resolution step by step until it runs smoothly (never below 1x)
+  if (raw > 0 && raw < .25 && frameNo++ > 150) {
+    perfSum += raw;
+    if (++perfN >= 90) {
+      if (perfSum / perfN > 1 / 38 && ratio > 1) { ratio = Math.max(1, ratio - .25); renderer.setPixelRatio(ratio); dirty = true; }
+      perfSum = perfN = 0;
+    }
+  }
+  const idle = !dragging && !blocked();
+  // idle spin eases to a stop while a card is hovered, and picks up again when the cursor leaves
+  const E = k => 1 - Math.pow(1 - k, dt * 60);   // per-frame factor tuned at 60fps → time-based
+  if (LAY.ring) {
+    flingV = 0;
+    if (idle) {
+      if (!ringOver) stepClock += dt; else stepClock = Math.min(stepClock, STEP_HOLD - .6);
+      if (stepClock > STEP_HOLD && !calm) { stepClock = 0; scrollT = Math.round(scrollT / TURN) * TURN + TURN; }
+    } else stepClock = 0;
+    if (!dragging) scrollT += (Math.round(scrollT / TURN) * TURN - scrollT) * E(.06);   // settle on the nearest card
+  } else {
+    spin += ((idle && !hovered && !calm && now > pauseUntil ? SPIN : 0) - spin) * E(.06);
+    if (idle) { scrollT += dt * spin + (hovered ? 0 : flingV * dt * 60); flingV *= hovered ? 0 : Math.pow(.92, dt * 60); }
+  }
+  introSpin += (0 - introSpin) * E(.035);
+  scroll += (scrollT - scroll) * E(.08);
+  rotX += (rotXT - rotX) * E(.07);
+  // real angular speed (rad/s); the slow idle spin stays crisp, only fast scrolling/throws smear
+  const vel = (scroll - prevScroll) / Math.max(dt, 1 / 240); prevScroll = scroll;
+  speed += (Math.min(1, Math.max(0, Math.abs(vel) - .8) * .45) - speed) * E(.2);
+
+  // follow the cursor only while it is actually over the page (mouse starts at -9 = "no cursor yet")
+  const mx = Math.abs(mouse.x) <= 1 ? mouse.x : 0, my = Math.abs(mouse.y) <= 1 ? mouse.y : 0;
+  group.rotation.x = LAY.ring ? 0 : TILT + rotX + my * .04;
+  group.rotation.z = LAY.ring ? 0 : mx * -.02;
+  group.updateMatrixWorld();
+
+  // smooth per-project fades: cover appearing after load, cover ↔ loop on hover
+  PROJECTS.forEach(p => {
+    if (!p._mats) return;
+    p._rev += ((p._ready ? 1 : 0) - p._rev) * E(.05);
+    p._mix += ((p._hoverOn && p._video && p._video.readyState >= 2 ? 1 : 0) - p._mix) * E(.09);
+    if (!p._hoverOn && p._mix < .02 && p._video && !p._video.paused) p._video.pause();
+    p._seenV += (p._seen - p._seenV) * E(.05);
+    p._mats.forEach(m => { m.uniforms.uReveal.value = p._rev; m.uniforms.uMix.value = p._mix; m.uniforms.uSeen.value = p._seenV; });
+  });
+
+
+  let best = null;
+  cards.forEach(m => {
+    const d = m.userData, u = m.material.uniforms;
+    const t = ((d.base - scroll - introSpin) % span + span) % span - span / 2;
+    d.t = t;
+    // phone: a flat ring always in the vertical middle; desktop: the helix rises with each card
+    const y = LAY.ring ? LAY.ringY : -t / TURN * RISE;
+    m.position.set(Math.sin(t) * LAY.R, y, Math.cos(t) * LAY.R);
+    m.rotation.y = t;                                    // continuous turn, no 180° snap at the sides
+    d.hover += ((m === hovered ? 1 : 0) - d.hover) * E(.15);
+    let s = 1 + d.hover * .08;
+    m.scale.setScalar(s * LAY.cs);
+
+    v3.copy(m.position).applyMatrix4(group.matrixWorld).project(camera);
+    // cards going round the back count as far away, ramping smoothly instead of switching at the side
+    d.dist = Math.hypot(v3.x * camera.aspect, v3.y) + (1 - smooth(-.35, .35, Math.cos(t))) * 3;
+    if (!best || d.dist < best.userData.dist) best = m;
+
+    // crisp in the central zone (about two cards), blur + mosaic elsewhere and while spinning fast
+    const goal = m === hovered ? 0 : Math.max(smooth(FOCUS, FOCUS + .35, d.dist), speed * .75);
+    d.focus += (goal - d.focus) * E(.14);
+    if (!Number.isFinite(d.focus)) d.focus = 1;          // self-heal: one bad frame must never leave a card black
+    const off = d.focus;
+    // mosaic starts with very fine cells (barely visible) and coarsens gradually — no visible jump
+    u.uPix.value = off > .15 ? 160 - (off - .15) / .85 * 125 : 0;
+    u.uBlur.value = off * .009 * (2 / TAP);   // fewer samples spaced wider = same softness
+    u.uDim.value = 1 - off * .35;
+    u.uBend.value = d.baseBend + speed * .05;
+    const edge = Math.max(0, Math.min(1, (span / 2 - Math.abs(t)) / 4));
+    // cards dissolve toward the top and bottom of the screen (the visible window is symmetric around the center)
+    const band = 1 - smooth(BAND, BAND + .3, Math.abs(v3.y));
+    // on the ring only one turn is shown (cards further along would sit on top of each other)
+    const ringFade = LAY.ring ? 1 - smooth(2.5, 3.05, Math.abs(t)) : 1;
+    u.uOpacity.value = edge * band * ringFade;
+    m.renderOrder = Math.round(Math.cos(t) * 1000);   // fine-grained so overlaps don't flicker
+  });
+  // phone ring: the same soft tick as hovering a card on a computer, each time a new card arrives in the middle
+  if (LAY.ring && best && best !== centerCard && centerCard) blip(520 + (PROJECTS.indexOf(best.userData.p) % 8) * 40, .06, .035);
+  centerCard = best;
+
+
+  // phone ring: is the cursor / finger on a card? then the ring waits (checked every 3rd frame, like hover)
+  if (LAY.ring && pickTick % 3 === 0) ringOver = Math.abs(mouse.x) <= 1 && !blocked() && !!pick();
+  setHovered(blocked() || (isTouch && LAY.ring) ? null : (pickTick++ % 3 === 0 ? pick() : hovered));
+  updateRingCap();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ---------- filters ----------
+function renderFilters(){
+  const all = ['all', ...CATS];
+  $('#filters').innerHTML = all.map((c, i) => `${i ? '<i></i>' : ''}<button data-c="${esc(c)}" class="${c === filter ? 'on' : ''}">${c === 'all' ? 'все' : esc(c)}</button>`).join('');
+  $$('#filters button').forEach(b => b.onclick = () => setFilter(b.dataset.c, true));
+}
+function setFilter(c, push){
+  filter = c === 'all' || CATS.includes(c) ? c : 'all';
+  $$('#filters button').forEach(b => b.classList.toggle('on', b.dataset.c === filter));
+  buildSpiral(); renderList();
+  introSpin = 3;                                   // little re-shuffle spin
+  if (push) { setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter)); track('filter', filter); }
+}
+
+// ---------- list ----------
+function renderList(){
+  const list = visibleProjects();
+  $('#list').innerHTML = list.map(p => `
+    <a href="#" class="row" data-id="${esc(p.id)}"><div class="th">${isVid(p.loop) ? `<video src="${esc(U(p.loop))}" poster="${esc(thumbOf(p))}" muted loop playsinline preload="none"></video>` : `<img src="${esc(thumbOf(p))}" alt="">`}</div>
+      <div><small>${esc(p.category)}</small><h3>${esc(p.title)}</h3><small>${esc(p.desc)}</small></div></a>`).join('')
+    || '<p style="color:#777;padding:20px 0">пока пусто</p>';
+  $$('#list .row').forEach(r => {
+    const p = PROJECTS.find(x => x.id === r.dataset.id), v = $('video', r);
+    r.onclick = e => { e.preventDefault(); morphOpen(p, e.clientX, e.clientY); };
+    if (v) { r.onpointerenter = () => v.play().catch(() => {}); r.onpointerleave = () => v.pause(); }
+  });
+}
+function setView(v){
+  body.classList.toggle('listview', v === 'list');
+  $('#viewBtn').textContent = v === 'list' ? 'спираль' : 'список';
+}
+$('#viewBtn').onclick = () => setView(body.classList.contains('listview') ? 'spiral' : 'list');
+
+// ---------- panels (menu / about / price) grow out of a dot ----------
+function openPanel(id, from){
+  closePanels(true);
+  const pnl = $(id), r = pnl.getBoundingClientRect(), d = (from || $('#menuBtn .dot')).getBoundingClientRect();
+  pnl.style.setProperty('--ox', (d.left + d.width / 2 - r.left) + 'px');
+  pnl.style.setProperty('--oy', (d.top + d.height / 2 - r.top) + 'px');
+  pnl.classList.add('on');
+  body.classList.add('panel-open');
+  blip(300, .18, .05);
+}
+function closePanels(keepShade){
+  $$('.panel').forEach(p => p.classList.remove('on'));
+  if (!keepShade) body.classList.remove('panel-open');
+}
+$('#menuBtn').onclick = () => $('#menu').classList.contains('on') ? closePanels() : openPanel('#menu');
+$('#shade').onclick = () => closePanels();
+$$('[data-close]').forEach(b => b.onclick = () => closePanels());
+$$('#menu [data-go]').forEach(a => a.onclick = e => {
+  e.preventDefault();
+  const g = a.dataset.go;
+  if (g === 'works') closePanels();
+  if (g === 'about') openPanel('#about');
+  if (g === 'price') { closePanels(); openPrice(); }
+  if (g === 'contact') { track('contact', 'меню'); closePanels(); window.open(SITE.contact || 'mailto:' + SITE.email, '_blank'); }
+});
+$('#priceBtn').onclick = () => openPrice();
+
+// ---------- what visitors click: counted per day/country by worker.js (not in the admin preview) ----------
+function track(kind, item = ''){
+  if (new URLSearchParams(location.search).has('draft') || !navigator.sendBeacon) return;
+  try { navigator.sendBeacon('/hit', new Blob([kind + '|' + String(item).slice(0, 60)], { type: 'text/plain' })); } catch {}
+}
+
+// ---------- price popup ----------
+const priceModal = $('#priceModal');
+function openPrice(){
+  showPriceView('#pmList');
+  priceModal.classList.add('on'); body.classList.add('pricing');
+  track('price');
+  blip(300, .18, .05);
+}
+function closePrice(){ priceModal.classList.remove('on'); body.classList.remove('pricing'); }
+function showPriceView(id){
+  ['#pmList', '#pmDetail', '#pmGear', '#pmGearItem'].forEach(v => $(v).classList.toggle('hide', v !== id));
+  const el = $(id); el.classList.add('enter'); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
+  $('.mcard', priceModal).scrollTop = 0;
+}
+const badgeClsOf = t => /нов|new/i.test(t) ? 'new' : /скид|акци|sale|выгод/i.test(t) ? 'sale' : '';
+function showPackage(i){
+  const k = (DATA.packages || [])[i]; if (!k) return;
+  const contact = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#pmDetail').innerHTML = `
+    <button class="back">← все пакеты</button>
+    ${k.badge ? `<span class="badge dbadge ${badgeClsOf(k.badge)}">${esc(k.badge)}</span>` : ''}
+    <h2>${esc(k.name)}</h2>
+    <div class="dcost"><b>${esc(k.price)}</b>${k.oldPrice ? `<s class="old">${esc(k.oldPrice)}</s>` : ''}${k.period ? `<span>${esc(k.period)}</span>` : ''}${k.save ? `<span class="save">${esc(k.save)}</span>` : ''}</div>
+    ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
+    ${(k.items || []).length ? `<ul class="dlist">${k.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    ${k.details ? `<p class="dtext">${esc(k.details)}</p>` : ''}
+    ${k.note ? `<p class="dnote">${esc(k.note)}</p>` : ''}
+    <a class="order" href="${esc(contact)}" target="_blank" rel="noopener">заказать «${esc(k.name)}» →</a>`;
+  $('#pmDetail .back').onclick = () => showPriceView('#pmList');
+  $('#pmDetail .order').onclick = () => track('order', k.name);
+  track('pkg', k.name);
+  showPriceView('#pmDetail');
+  blip(520, .08);
+}
+$('.mx', priceModal).onclick = closePrice;
+priceModal.addEventListener('click', e => { if (e.target === priceModal) closePrice(); });
+$('#home').onclick = e => { e.preventDefault(); closeAll(); setFilter('all', true); };
+
+// ---------- fullscreen player: own mp4 or Vimeo, controlled from the cursor (tap on phones) ----------
+const player = $('#player'), cur = $('#cur');
+const ctrl = { kind: 'none', paused: true, dur: 0, t: 0, muted: false, iframe: null, video: null, p: null, clips: [], clip: null, idx: 0 };
+function vpost(method, value){
+  if (!ctrl.iframe || !ctrl.iframe.contentWindow) return;
+  ctrl.iframe.contentWindow.postMessage(JSON.stringify(value === undefined ? { method } : { method, value }), 'https://player.vimeo.com');
+}
+addEventListener('message', e => {
+  if (!ctrl.iframe || e.source !== ctrl.iframe.contentWindow) return;
+  let d; try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+  if (!d || !(d.event || d.method)) return;
+  ctrl.alive = true;
+  if (d.event === 'ready') vSubscribe();
+  if (d.event === 'play') ctrl.paused = false;
+  if (d.event === 'pause') ctrl.paused = true;
+  if (d.event === 'ended' || d.event === 'finish') finishVideo();
+  // vimeo reports progress as "playProgress" (older protocol) or "timeupdate"
+  if ((d.event === 'timeupdate' || d.event === 'playProgress') && d.data) {
+    ctrl.dur = d.data.duration; ctrl.t = d.data.seconds; setBar(d.data.percent);
+    // stop just before the end, so Vimeo's own end screen ("more from…") never shows
+    if (ctrl.dur && ctrl.t >= ctrl.dur - .35 && !ctrl.ended) finishVideo();
+  }
+  if (d.event === 'volumechange' && d.data) ctrl.muted = !!d.data.muted || d.data.volume === 0;
+  if (d.method === 'getDuration' && d.value) ctrl.dur = d.value;
+  if (d.method === 'getPaused' && typeof d.value === 'boolean') ctrl.paused = d.value;
+  if (d.method === 'getMuted' && typeof d.value === 'boolean') ctrl.muted = d.value;
+  updateUI();
+});
+function vSubscribe(){
+  ['play', 'pause', 'ended', 'finish', 'timeupdate', 'playProgress', 'volumechange'].forEach(ev => vpost('addEventListener', ev));
+  vpost('getDuration'); vpost('getPaused'); vpost('getMuted');
+}
+const fmt = s => !isFinite(s) ? '0:00' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setBar(f){ $('#player .bar u').style.width = Math.max(0, Math.min(1, f || 0)) * 100 + '%'; }
+const ICON_ON = '<svg viewBox="0 0 24 24"><path class="fl" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 010 6M18 6.5a8 8 0 010 11"/></svg>';
+const ICON_OFF = '<svg viewBox="0 0 24 24"><path class="fl" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>';
+function updateUI(){
+  player.classList.toggle('paused', ctrl.kind !== 'none' && ctrl.paused);
+  $('#player .time').textContent = ctrl.dur ? `${fmt(ctrl.t)} / ${fmt(ctrl.dur)}` : '';
+  $('#muteBtn').innerHTML = ctrl.muted ? ICON_OFF : ICON_ON;
+  updateCur();
+}
+// the clips of a project: its main video first, then the extra ones added in the admin
+const clipsOf = p => p._clips || (p._clips = [
+  { title: p.title, vimeo: p.vimeo, mp4: isVid(p.video || p.loop) ? (p.video || U(p.loop)) : '' },
+  ...(p.more || []).filter(m => m && vimeoInfo(m.vimeo)).map(m => ({ title: m.title || '', vimeo: m.vimeo, thumb: m.thumb || '' })),
+]);
+const clipThumb = (p, c) => (c === clipsOf(p)[0] ? (U(p.thumb) || thumbOf(p)) : U(c.thumb)) || '';
+// size and preview of a clip come from Vimeo; extra clips are looked up when their project is opened
+function ensureMeta(c){
+  if (c._m || !c.vimeo) return;
+  c._m = vimeoMeta(c.vimeo).then(m => {
+    if (!m) return;
+    if (m.width && m.height) c._aspect = m.width / m.height;
+    if (!c.thumb && m.thumbnail_url) c.thumb = m.thumbnail_url;
+    if (!c.title && m.title) c.title = m.title;
+    if (ctrl.clip === c && player.classList.contains('on')) { fitFrame(); updateMeta(); }
+  });
+}
+function playerAspect(){
+  const p = ctrl.p, c = ctrl.clip;
+  if (!p || !c) return 16 / 9;
+  if (ctrl.kind === 'none') return 4 / 3;      // no video yet: show the 4:3 cover whole
+  if (c._aspect) return c._aspect;
+  return p.format === '9:16' ? 9 / 16 : 16 / 9;
+}
+// frame = the video's own shape, as big as fits above the title / progress / thumbnails rows
+function fitFrame(){
+  const vw = innerWidth, vh = innerHeight, mobile = vw < 700, a = playerAspect();
+  const padX = mobile ? 12 : (isTouch ? 100 : 80), top = mobile ? 60 : 64;
+  const z = parseFloat(getComputedStyle($('#player .under')).zoom) || 1;   // the control row is scaled up on big monitors
+  const under = (mobile ? 92 : 90) * z + 26;          // + breathing room under the controls
+  const w = Math.max(120, Math.min(vw - padX * 2, (vh - top - under) * a)), h = w / a;
+  const f = $('#player .frame');
+  f.style.width = w + 'px'; f.style.height = h + 'px';
+  $$('#player .snav').forEach(b => b.style.top = h / 2 + 'px');
+  player.classList.toggle('inside', (vw - w) / 2 < (isTouch ? 84 : 300));   // wide (horizontal) video: no room beside it, buttons go on its edges
+  $('#player .wrap').style.width = w + 'px';
+  $('#player .wrap').style.marginTop = Math.max(0, 2 * top - vh + h + under) + 'px';   // frame starts exactly `top` from the screen edge
+}
+function paintBackdrop(src){
+  const c = $('#player .pbg canvas'), x = c.getContext('2d');
+  x.fillStyle = '#060606'; x.fillRect(0, 0, 24, 24);
+  if (!src) return;
+  const im = new Image();
+  im.onload = () => {
+    if (paintBackdrop.src !== src) return;               // another clip was opened meanwhile
+    const a = im.width / im.height, w = a > 1 ? 24 * a : 24, h = a > 1 ? 24 : 24 / a;   // cover
+    x.drawImage(im, (24 - w) / 2, (24 - h) / 2, w, h);
+  };
+  paintBackdrop.src = src; im.src = src;
+}
+function updateMeta(){
+  const p = ctrl.p, c = ctrl.clip, n = ctrl.clips.length;
+  $('#player .meta b').textContent = c.title || p.title;
+  $('#player .meta span').textContent = n > 1 ? `${p.title} · ${ctrl.idx + 1} из ${n}` : (p.desc || '');
+}
+// prev / next only move between the clips of the opened project; other projects are opened from the spiral
+function go(d){
+  const i = ctrl.idx + d;
+  if (i >= 0 && i < ctrl.clips.length) loadClip(i);
+}
+function updateNav(){
+  const n = ctrl.clips.length, multi = n > 1, i = ctrl.idx;
+  player.classList.toggle('multi', multi);
+  $('#prevBtn').disabled = $('#ctlPrev').disabled = i === 0;
+  $('#nextBtn').disabled = $('#ctlNext').disabled = i === n - 1;
+  if (i < n - 1) $('#nextLbl').textContent = ctrl.clips[i + 1].title || ctrl.p.title;
+  if (i > 0) $('#prevLbl').textContent = ctrl.clips[i - 1].title || ctrl.p.title;
+  $('#dots').innerHTML = multi ? ctrl.clips.map((_, k) => `<i class="${k === ctrl.idx ? 'on' : k < ctrl.idx ? 'done' : ''}"></i>`).join('') : '';
+  // the "next" button explains itself for a moment whenever a clip starts
+  const nb = $('#nextBtn'); clearTimeout(updateNav.t); nb.classList.remove('hint');
+  if (!nb.disabled) { nb.classList.add('hint'); updateNav.t = setTimeout(() => nb.classList.remove('hint'), 2600); }
+}
+const hashOf = (p, i) => 'p/' + encodeURIComponent(p.id) + (i ? '/' + (i + 1) : '');
+
+function openPlayer(p, idx = 0){
+  if (!p) return;
+  closePanels();
+  ctrl.p = p; ctrl.clips = clipsOf(p);
+  markSeen(p);
+  loadClip(Math.max(0, Math.min(idx, ctrl.clips.length - 1)));
+  player.classList.add('on'); body.classList.add('playing');
+  if (playingVideo) setHovered(null);
+  hintDone = true;
+  ctrl.clips.forEach(ensureMeta);
+}
+// load one clip of the open project into the player
+function loadClip(i){
+  const p = ctrl.p, c = ctrl.clip = ctrl.clips[i];
+  ctrl.idx = i; ctrl.paused = true; ctrl.dur = 0; ctrl.t = 0; ctrl.muted = false; ctrl.ended = false; ctrl.iframe = ctrl.video = null;
+  clearEnd(); player.classList.remove('ended');
+  const th = clipThumb(p, c) || thumbOf(p);
+  $('#player .poster').style.backgroundImage = `url("${th}")`;
+  paintBackdrop(th);
+  const media = $('#player .media'), vi = vimeoInfo(c.vimeo);
+  setBar(0);
+  if (vi) {
+    ctrl.kind = 'vimeo';
+    // with sound: opening is a click, so the browser allows it; if it still refuses, the first tap unmutes
+    const q = new URLSearchParams({ api: 1, autoplay: 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
+    if (vi.hash) q.set('h', vi.hash);
+    media.innerHTML = `<iframe src="https://player.vimeo.com/video/${vi.id}?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    ctrl.iframe = $('iframe', media);
+    // the player inside the iframe starts listening some time after load: keep subscribing until it answers
+    ctrl.alive = false;
+    const frameRef = ctrl.iframe;
+    const retry = setInterval(() => {
+      if (ctrl.iframe !== frameRef || ctrl.alive) return clearInterval(retry);
+      vSubscribe();
+    }, 400);
+    setTimeout(() => clearInterval(retry), 15000);
+    ensureMeta(c);
+  } else if (c.mp4) {
+    ctrl.kind = 'mp4';
+    media.innerHTML = `<video src="${esc(c.mp4)}" playsinline></video>`;
+    const v = ctrl.video = $('video', media);
+    v.onloadedmetadata = () => { c._aspect = v.videoWidth / v.videoHeight; fitFrame(); };
+    v.ontimeupdate = () => { ctrl.dur = v.duration; ctrl.t = v.currentTime; setBar(v.currentTime / v.duration); updateUI(); };
+    v.onplay = () => { ctrl.paused = false; updateUI(); };
+    v.onpause = () => { ctrl.paused = true; updateUI(); };
+    v.onended = finishVideo;
+    v.onvolumechange = () => { ctrl.muted = v.muted; updateUI(); };
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+  } else {
+    ctrl.kind = 'none';
+    media.innerHTML = `<img src="${esc(thumbOf(p))}" alt=""><div class="empty">видео скоро будет</div>`;
+  }
+  updateMeta();
+  $('#player .bar').style.visibility = ctrl.kind === 'none' ? 'hidden' : '';
+  $('#muteBtn').style.display = ctrl.kind === 'none' ? 'none' : '';
+  $('#fsBtn').hidden = ctrl.kind === 'none';
+  player.classList.toggle('novideo', ctrl.kind === 'none');
+  fitFrame(); updateUI(); updateNav();
+  setHash(hashOf(p, i));
+  track('video', i ? `${p.id}/${i + 1}` : p.id);
+}
+function closePlayer(){
+  if (!player.classList.contains('on')) return;
+  clearEnd();
+  if (ctrl.video) ctrl.video.pause();
+  vpost('pause');
+  if (player.classList.contains('fsx')) exitFs();
+  player.classList.remove('on', 'paused', 'ended'); body.classList.remove('playing'); cur.classList.remove('on');
+  setTimeout(() => { if (!player.classList.contains('on')) { $('#player .media').innerHTML = ''; ctrl.iframe = ctrl.video = null; } }, 600);
+  setHash(filter === 'all' ? '' : 'c/' + encodeURIComponent(filter));
+}
+function setMuted(m){
+  ctrl.muted = m;
+  if (ctrl.kind === 'mp4') ctrl.video.muted = m;
+  if (ctrl.kind === 'vimeo') { vpost('setMuted', m); if (!m) vpost('setVolume', 1); }
+  updateUI();
+}
+
+// ---- end of a clip: back to the start under our own poster; then "next" (4 s, can be cancelled) or the end screen ----
+let nextTimer = 0;
+function clearEnd(){ clearTimeout(nextTimer); $('#nextUp').classList.remove('on'); $('#endScreen').classList.remove('on'); }
+function finishVideo(){
+  if (ctrl.ended) return;
+  ctrl.ended = true; ctrl.paused = true;
+  if (ctrl.kind === 'mp4') { ctrl.video.pause(); ctrl.video.currentTime = 0; }
+  if (ctrl.kind === 'vimeo') { vpost('pause'); vpost('setCurrentTime', 0); }
+  setBar(0); ctrl.t = 0;
+  player.classList.add('ended');
+  updateUI();
+  if (ctrl.idx < ctrl.clips.length - 1) showNextUp(); else showEnd();
+}
+function showNextUp(){
+  const c = ctrl.clips[ctrl.idx + 1], el = $('#nextUp');
+  $('.nu-t', el).textContent = 'следующий: ' + (c.title || ctrl.p.title);
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');   // restarts the countdown ring
+  clearTimeout(nextTimer); nextTimer = setTimeout(() => go(1), 3000);
+}
+function showEnd(){
+  const p = ctrl.p, multi = ctrl.clips.length > 1, contact = SITE.contact || 'mailto:' + (SITE.email || '');
+  const others = PROJECTS.filter(x => x !== p && x._ready)
+    .sort((a, b) => (seen.has(a.id) ? 1 : 0) - (seen.has(b.id) ? 1 : 0)).slice(0, 3);      // unseen projects first
+  const done = PROJECTS.filter(x => seen.has(x.id)).length;
+  const box = $('#endScreen');
+  box.innerHTML = `
+    <div class="e-title">${multi ? 'это всё по ' + esc(p.title) : 'понравилось?'}</div>
+    <div class="e-sub">вы посмотрели ${done} из ${PROJECTS.length}</div>
+    <div class="e-btns"><button class="e-again">↻ ещё раз</button><a class="e-cta" href="${esc(contact)}" target="_blank" rel="noopener">заказать</a></div>
+    ${others.length ? `<div class="e-lbl">смотреть ещё</div><div class="e-more">${others.map(x => { const n = clipsOf(x).length;
+      return `<button class="e-card" data-id="${esc(x.id)}"><img alt="" src="${esc(thumbOf(x))}"><b>${esc(x.title)}</b>${n > 1 ? `<small>${n} ${plural(n, ['ролик', 'ролика', 'роликов'])}</small>` : ''}</button>`; }).join('')}</div>` : ''}`;
+  $('.e-again', box).onclick = () => loadClip(multi ? 0 : ctrl.idx);
+  $('.e-cta', box).onclick = () => track('order', 'финал');
+  $$('.e-card', box).forEach(b => b.onclick = () => openPlayer(PROJECTS.find(x => x.id === b.dataset.id)));
+  box.classList.add('on');
+}
+function toggle(){
+  if (ctrl.ended) { ctrl.ended = false; player.classList.remove('ended'); clearEnd(); }
+  if (ctrl.paused) {
+    if (ctrl.kind === 'mp4') ctrl.video.play().catch(() => {});
+    if (ctrl.kind === 'vimeo') vpost('play');
+    setMuted(false);
+  } else {
+    if (ctrl.kind === 'mp4') ctrl.video.pause();
+    if (ctrl.kind === 'vimeo') vpost('pause');
+  }
+  ctrl.paused = !ctrl.paused;
+  updateUI();
+}
+function seek(f){
+  f = Math.max(0, Math.min(.98, f));
+  if (ctrl.ended) { ctrl.ended = false; player.classList.remove('ended'); clearEnd(); }
+  if (ctrl.kind === 'mp4' && ctrl.video.duration) ctrl.video.currentTime = f * ctrl.video.duration;
+  if (ctrl.kind === 'vimeo' && ctrl.dur) vpost('setCurrentTime', f * ctrl.dur);
+  setBar(f);
+}
+function updateCur(){
+  if (!cur.classList.contains('on') || cur.dataset.mode === 'seek') return;
+  cur.textContent = ctrl.paused ? 'смотреть' : 'пауза';
+}
+player.addEventListener('pointermove', e => {
+  const onHit = e.target.closest('.hit'), onBar = e.target.closest('.bar');
+  if (ctrl.kind === 'none' || !(onHit || onBar)) { cur.classList.remove('on'); return; }
+  cur.dataset.mode = onBar ? 'seek' : '';
+  cur.textContent = onBar ? 'перемотка' : ctrl.paused ? 'смотреть' : 'пауза';
+  cur.classList.add('on');
+});
+player.addEventListener('pointerleave', () => cur.classList.remove('on'));
+let swiped = false;
+$('#player .hit').onclick = () => { if (swiped) { swiped = false; return; } if (ctrl.kind !== 'none') toggle(); };
+{
+  // swipe left/right on the video = next/previous clip
+  let s = null;
+  const hit = $('#player .hit');
+  hit.addEventListener('pointerdown', e => { s = { x: e.clientX, y: e.clientY }; });
+  hit.addEventListener('pointerup', e => {
+    if (!s) return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y; s = null;
+    if (ctrl.clips.length > 1 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = true; setTimeout(() => swiped = false, 120); go(dx < 0 ? 1 : -1); }
+  });
+}
+$$('#player .snav').forEach(b => b.addEventListener('pointerdown', () => { b.classList.add('lit'); setTimeout(() => b.classList.remove('lit'), 900); }));
+$('#ctlPrev').onclick = () => go(-1);
+$('#ctlNext').onclick = () => go(1);
+$('#prevBtn').onclick = () => go(-1);
+$('#nextBtn').onclick = () => go(1);
+$('#nextUp .nu-now').onclick = () => go(1);
+$('#nextUp .nu-x').onclick = () => clearEnd();
+// click or drag on the progress bar (drag works with a finger too)
+{
+  const bar = $('#player .bar');
+  const at = e => { const r = bar.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
+  let scrub = false;
+  bar.addEventListener('pointerdown', e => { scrub = true; bar.setPointerCapture(e.pointerId); seek(at(e)); });
+  bar.addEventListener('pointermove', e => { if (scrub) seek(at(e)); });
+  bar.addEventListener('pointerup', () => { scrub = false; });
+}
+$('#muteBtn').onclick = () => setMuted(!ctrl.muted);
+// full screen: the video frame always covers the whole window at once (works everywhere, iPhone included);
+// where the browser allows it, the page also goes real full screen, hiding the browser bars
+{
+  const docFs = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const enterFs = () => {
+    player.classList.add('fsx');
+    const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) {
+      try {
+        const r = req.call(el);
+        if (r && r.then) r.then(() => {
+          if (playerAspect() > 1 && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+        }).catch(() => {});
+      } catch {}
+    }
+  };
+  const exitFs = () => {
+    player.classList.remove('fsx');
+    if (docFs()) try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {}
+    try { screen.orientation.unlock(); } catch {}
+  };
+  window.exitFs = exitFs;
+  $('#fsBtn').onclick = () => player.classList.contains('fsx') ? exitFs() : enterFs();
+  // while the video covers the screen, × only leaves that mode (a second tap closes the player)
+  $('#player .x').addEventListener('click', e => { if (player.classList.contains('fsx')) { exitFs(); e.stopImmediatePropagation(); } }, true);
+  // the browser's own exit (Esc, swipe down): leave our mode too
+  const onFs = () => { if (!docFs() && player.classList.contains('fsx') && onFs.was) exitFs(); onFs.was = !!docFs(); };
+  document.addEventListener('fullscreenchange', onFs);
+  document.addEventListener('webkitfullscreenchange', onFs);
+}
+// closing: a black circle grows from where you clicked, the player is removed under it, then it fades
+async function closeWithWipe(x = innerWidth / 2, y = innerHeight / 2){
+  if (!player.classList.contains('on') || wipeBusy) return;
+  if (ctrl.video) ctrl.video.pause();
+  vpost('pause');
+  await wipeIn('#0a0a0a', x, y);
+  player.classList.add('instant');
+  closePlayer();
+  requestAnimationFrame(() => player.classList.remove('instant'));
+  wipeOut();
+}
+$('#player .x').onclick = e => closeWithWipe(e.clientX, e.clientY);
+// click on the dark area around the video closes it
+player.addEventListener('click', e => { if (e.target === player || e.target.closest('.pbg')) closeWithWipe(e.clientX, e.clientY); });
+
+// ---------- circle transition (same idea as the menu) ----------
+const wipe = $('#wipe');
+let wipeBusy = false;
+function wipeIn(color, x, y){
+  wipeBusy = true;
+  wipe.classList.add('instant'); wipe.classList.remove('in', 'out');
+  wipe.style.background = color;
+  wipe.style.setProperty('--x', x + 'px'); wipe.style.setProperty('--y', y + 'px');
+  void wipe.offsetWidth;                       // apply the start state before animating
+  wipe.classList.remove('instant'); wipe.classList.add('in');
+  return new Promise(r => setTimeout(r, 620));
+}
+function wipeOut(){
+  wipe.classList.add('out');
+  setTimeout(() => { wipe.classList.add('instant'); wipe.classList.remove('in', 'out'); wipeBusy = false; }, 560);
+}
+
+// ---------- opening: the clicked cover grows into the player frame ----------
+const ghost = $('#ghost');
+let morphing = false;
+function placeGhost(r, radius){
+  Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', borderRadius: radius + 'px' });
+}
+// black circle from the click (like the menu) → a white dot breathes in the middle while the video loads
+// → the dot stretches into the video frame → black fades away and the player is there
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function morphOpen(p, x, y){
+  if (morphing || blocked() || wipeBusy) return;
+  morphing = true;
+  const circle = wipeIn('#0a0a0a', x, y);
+  await sleep(320);
+  ghost.classList.add('instant'); ghost.classList.remove('fade');
+  placeGhost({ left: innerWidth / 2 - 6, top: innerHeight / 2 - 6, width: 12, height: 12 }, 6);
+  ghost.classList.add('on', 'pulse');
+  void ghost.offsetWidth;
+  ghost.classList.remove('instant');
+  await circle;
+  player.classList.add('morph');                // player is opened under the black, content hidden
+  openPlayer(p);
+  await sleep(380);                             // gives the video a moment to start loading
+  ghost.classList.remove('pulse');
+  placeGhost($('#player .frame').getBoundingClientRect(), 14);
+  await sleep(640);
+  player.classList.remove('morph');
+  ghost.classList.add('fade');
+  wipeOut();
+  await sleep(460);
+  ghost.classList.remove('on', 'fade');
+  morphing = false;
+}
+
+// ---------- deep links: #p/<id> opens a video, #c/<category> filters ----------
+function setHash(h){ history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); }
+function applyHash(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('c/')) setFilter(h.slice(2));
+  if (h.startsWith('p/')) {
+    const [id, n] = h.slice(2).split('/');
+    const p = PROJECTS.find(x => x.id === id);
+    if (p) openPlayer(p, (parseInt(n, 10) || 1) - 1);
+  }
+}
+
+function blocked(){
+  return !$('#intro').classList.contains('gone') || player.classList.contains('on') || body.classList.contains('panel-open') || body.classList.contains('pricing');
+}
+function closeAll(){ closePanels(); closePrice(); closePlayer(); }
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (player.classList.contains('fsx')) exitFs(); else if (player.classList.contains('on')) closeWithWipe(); else closeAll(); }
+  if (player.classList.contains('on')) {
+    if (e.key === ' ' && ctrl.kind !== 'none') { e.preventDefault(); toggle(); }
+    if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  }
+});
+
+// ---------- boot ----------
+(async () => {
+  try { DATA = await loadData(); }
+  catch { DATA = { site: {}, categories: [], projects: [], packages: [] }; }
+  SITE = DATA.site || {};
+  CATS = (DATA.categories || []).filter(Boolean);
+  PROJECTS = (DATA.projects || []).filter(p => p && p.title).map((p, i) => ({ ...p, id: p.id || 'work-' + (i + 1), more: Array.isArray(p.more) ? p.more : [] }));
+
+  document.title = `${SITE.name || 'Портфолио'} ✲ Портфолио`;
+  if (SITE.favicon) $('#favicon').href = U(SITE.favicon);
+  // your logo instead of the glowing orb (intro + top-left corner)
+  if (SITE.logo) $$('#intro .orb, #home').forEach(el => {
+    el.classList.add('brandlogo');
+    el.style.backgroundImage = `url("${U(SITE.logo)}")`;
+  });
+  // intro buttons: texts from the admin; an empty second text leaves a single "enter" button
+  if (SITE.enterSound) $('#intro [data-sound="1"]').textContent = SITE.enterSound;
+  if (SITE.enterMute === '') $('#intro [data-sound="0"]').remove();
+  else if (SITE.enterMute) $('#intro [data-sound="0"]').textContent = SITE.enterMute;
+  // visitor stats (countries, visits per day/week/month) — Cloudflare Web Analytics, no cookies;
+  // skipped in admin preview so your own checks don't count
+  if (SITE.cfToken && !new URLSearchParams(location.search).has('draft')) {
+    const s = document.createElement('script');
+    s.defer = true; s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    s.setAttribute('data-cf-beacon', JSON.stringify({ token: SITE.cfToken }));
+    document.head.appendChild(s);
+  }
+  $('#tagline').innerHTML = SITE.tagline || '';
+  $('#aboutTxt').innerHTML = (SITE.about || []).map(t => `<p>${esc(t)}</p>`).join('');
+  $('#aboutName').textContent = SITE.name || '';
+  if (SITE.role) { $('#aboutRole').textContent = SITE.role; $('#aboutRole').hidden = false; }
+  if (SITE.photo) { $('#aboutPh img').src = U(SITE.photo); $('#aboutPh').hidden = false; }
+  $('#aboutCta').href = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#aboutCta').onclick = () => track('order', 'обо мне');
+  $$('.mail').forEach(a => { a.textContent = SITE.email || ''; a.href = 'mailto:' + (SITE.email || ''); });
+  $$('.socials').forEach(d => d.innerHTML = (SITE.socials || []).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(''));
+  $('#priceText').textContent = (SITE.priceText || 'цены • пакеты • ').repeat(3);
+  $('#orderBtn').href = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#orderBtn').onclick = () => track('order', 'свой проект');
+  $('#pOrder').href = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#pOrder').onclick = () => track('order', 'плеер');
+  // «как я работаю» inside the price popup: only when there is something to show
+  const gear = (DATA.gear || []).filter(g => g && g.name);
+  if (gear.length) {
+    $('#gearLink').hidden = false;
+    // keep each group together, in the order groups first appear
+    const groups = [...new Set(gear.map(g => g.group || 'другое'))];
+    const hue = gr => [205, 32, 150, 265, 350, 95][groups.indexOf(gr) % 6];
+    const picOf = (g, cls = '') => g.img
+      ? `<div class="pic ${cls} ${g.fit === 'contain' ? 'fit' : ''}"><img src="${esc(U(g.img))}" alt="" loading="lazy"></div>`
+      : `<div class="pic ${cls} none"><i>${esc((g.name || '?').trim().charAt(0).toUpperCase())}</i></div>`;
+    const showGear = () => {
+      $('#pmGear').innerHTML = `<button class="back">← все пакеты</button>
+        <div class="gearhead"><h2>${esc(SITE.gearTitle || 'как я работаю')}</h2><span class="cnt">${gear.length} ${plural(gear.length, ['позиция', 'позиции', 'позиций'])}</span></div>
+        ${SITE.gearIntro ? `<p class="dtext">${esc(SITE.gearIntro)}</p>` : ''}
+        ${groups.map(gr => `<div class="ggroup" style="--h:${hue(gr)}">${esc(gr)}</div>
+          <div class="ggrid">${gear.filter(g => (g.group || 'другое') === gr).map((g, k) => `
+            <button class="gitem" data-i="${gear.indexOf(g)}" style="animation-delay:${k * .05}s;--h:${hue(gr)}">${picOf(g)}
+              <span class="t"><b>${esc(g.name)}</b>${g.note ? `<span class="nt">${esc(g.note)}</span>` : ''}<span class="go">подробнее →</span></span></button>`).join('')}</div>`).join('')}`;
+      $('#pmGear .back').onclick = () => showPriceView('#pmList');
+      $$('#pmGear .gitem').forEach(b => b.onclick = () => showGearItem(+b.dataset.i));
+      showPriceView('#pmGear');
+    };
+    const showGearItem = i => {
+      const g = gear[i], gr = g.group || 'другое', contact = SITE.contact || 'mailto:' + (SITE.email || '');
+      const same = gear.filter(x => x !== g && (x.group || 'другое') === gr);
+      $('#pmGearItem').innerHTML = `<button class="back">← ${esc(SITE.gearTitle || 'как я работаю')}</button>
+        <div class="gdet" style="--h:${hue(gr)}">${picOf(g)}
+          <div><span class="tag">${esc(gr)}</span><h2>${esc(g.name)}</h2>
+            ${g.note ? `<p class="nt">${esc(g.note)}</p>` : ''}${g.text ? `<p class="dtext">${esc(g.text)}</p>` : ''}</div></div>
+        ${same.length ? `<div class="e-lbl" style="color:#888">ещё из «${esc(gr)}»</div><div class="gmore">${same.map(x => `<button data-i="${gear.indexOf(x)}">${esc(x.name)}</button>`).join('')}</div>` : ''}
+        <a class="order" href="${esc(contact)}" target="_blank" rel="noopener">обсудить мой проект →</a>`;
+      $('#pmGearItem .back').onclick = showGear;
+      $('#pmGearItem .order').onclick = () => track('order', 'техника');
+      $$('#pmGearItem .gmore button').forEach(b => b.onclick = () => showGearItem(+b.dataset.i));
+      showPriceView('#pmGearItem');
+      track('gear', g.name);
+    };
+    $('#gearLink').onclick = () => { showGear(); track('gear'); };
+  }
+  // brands strip: two copies of the list so the loop is seamless
+  const clients = (DATA.clients || []).filter(c => c && (c.name || c.logo));
+  if (clients.length) {
+    const one = clients.map((c, i) => `<div class="cl ${c.work ? 'link' : ''}" data-i="${i}" title="${esc(c.name)}">${
+      c.logo ? `<img src="${esc(U(c.logo))}" alt="${esc(c.name)}">` : `<span>${esc(c.name)}</span>`}</div>`).join('');
+    const strip = $('#clients .track');
+    strip.innerHTML = one.repeat(clients.length < 6 ? 4 : 2);
+    strip.style.setProperty('--dur', Math.max(20, clients.length * (clients.length < 6 ? 8 : 4)) + 's');
+    // wait for the logos (max 2.5 s) so the endless line starts at its final width and doesn't jump
+    await Promise.race([Promise.all([...strip.querySelectorAll('img')].map(i => i.decode().catch(() => {}))), new Promise(r => setTimeout(r, 2500))]);
+    $('#clients').classList.add('on');
+    body.classList.add('has-clients');
+    $$('#clients .cl.link').forEach(el => el.onclick = e => {
+      const p = PROJECTS.find(x => x.id === clients[+el.dataset.i].work);
+      track('client', clients[+el.dataset.i].name || '');
+      if (p) morphOpen(p, e.clientX, e.clientY);
+    });
+  }
+  const contact = SITE.contact || 'mailto:' + (SITE.email || '');
+  $('#pkgs').innerHTML = (DATA.packages || []).map((k, i) => {
+    const items = k.items || [];
+    return `
+    <article class="pcard ${k.hot ? 'hot' : ''}" data-i="${i}">
+      ${k.badge ? `<span class="badge ${badgeClsOf(k.badge)}">${esc(k.badge)}</span>` : ''}
+      <span class="nm">${esc(k.name)}</span>
+      ${k.videos ? `<span class="vids">${esc(k.videos)}</span>` : ''}
+      <div class="pprice"><span class="cost">${esc(k.price)}</span>${k.oldPrice ? `<s class="old">${esc(k.oldPrice)}</s>` : ''}${k.period ? `<span class="per">${esc(k.period)}</span>` : ''}</div>
+      ${k.save ? `<span class="save">${esc(k.save)}</span>` : ''}
+      ${items.length ? `<ul class="pl">${items.slice(0, 4).map(t => `<li>${esc(t)}</li>`).join('')}${items.length > 4 ? `<li class="rest">и ещё ${items.length - 4}</li>` : ''}</ul>` : ''}
+      <div class="pact"><a class="pbuy" href="${esc(contact)}" target="_blank" rel="noopener">заказать</a><button class="pmore">подробнее →</button></div>
+    </article>`; }).join('') || '<p class="sub">пакеты скоро появятся</p>';
+  $$('#pkgs .pcard').forEach(b => {
+    b.onclick = () => showPackage(+b.dataset.i);
+    $('.pbuy', b).onclick = e => { e.stopPropagation(); track('order', DATA.packages[+b.dataset.i].name); };
+  });
+  if (SITE.priceNote) { $('#ptrust').textContent = SITE.priceNote; $('#ptrust').hidden = false; }
+
+  // always take the current thumbnail from Vimeo, so changing it in Vimeo updates the site;
+  // the saved one is only a fallback if Vimeo doesn't answer
+  await Promise.all(PROJECTS.map(async p => {
+    if (!p.vimeo) return;
+    const m = await vimeoMeta(p.vimeo);
+    if (!m) return;
+    if (m.thumbnail_url) p.thumb = m.thumbnail_url;
+    if (!p.format) p.format = m.height > m.width ? '9:16' : '16:9';
+    const first = clipsOf(p)[0];
+    if (m.width && m.height) first._aspect = m.width / m.height;
+    first._m = true;
+  }));
+  PROJECTS.forEach(prepareMedia);
+
+  renderFilters(); buildSpiral(); renderList(); resize();
+  addEventListener('resize', resize);
+  if (window.visualViewport) visualViewport.addEventListener('resize', resize);
+
+  let shown = 0;
+  const iv = setInterval(() => {
+    shown = Math.min(toLoad ? loaded / toLoad : 1, shown + .02);
+    $('#intro .pct span').textContent = Math.round(shown * 100) + '%';
+    $('#intro .pct').style.setProperty('--p', shown);
+    if (shown >= 1) { clearInterval(iv); $('#intro').classList.add('loaded'); }
+  }, 30);
+  $$('#intro .enter button').forEach(b => b.onclick = () => {
+    setSound(b.dataset.sound === '1');
+    blip(330, .25, .06);
+    $('#intro').classList.add('gone');
+    introSpin = 8;
+    resize();
+    ['header', '#priceBtn', '#soundBtn', '#clients'].forEach((s, k) => { const el = $(s); el.style.animationDelay = .3 + k * .1 + 's'; el.classList.add('blur-in'); });
+    applyHash();
+  });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
