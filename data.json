@@ -25,7 +25,8 @@
     "enterSound": "войти со звуком",
     "enterMute": "без звука",
     "gearTitle": "Мой стек",
-    "photo": "brand/photo-mvjok082.jpg"
+    "photo": "brand/photo-mvjok082.jpg",
+    "gearShow": false
   },
   "categories": [
     "экспертное",
