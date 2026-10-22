@@ -321,8 +321,6 @@
   #player .x:hover{transform:rotate(90deg)}
   #player.fsx .frame{position:fixed;inset:0;z-index:60;width:100%!important;height:100%!important;border-radius:0;box-shadow:none}
   #player.fsx .snav,#player.fsx .porder{display:none!important}
-  html.ios #player .hit,html.ios #player .big{display:none}     /* iPhone: taps go to Vimeo's own player (sound needs that) */
-  html.ios #muteBtn{display:none!important}                      /* volume = the phone's buttons */
   #player.fsx .poster{background-size:contain}              /* full screen: the end frame keeps its shape, nothing cut off */
   #player.fsx .media>img{object-fit:contain}
   @media (min-width:1800px){ header,#priceBtn,#soundBtn,#clients,#player .under,#player .x,#player .porder{zoom:1.15} }
@@ -539,8 +537,6 @@ const isVid = s => /\.(mp4|webm|mov)(\?|#|$)/i.test(s || '');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const body = document.body;
 const isTouch = matchMedia('(hover:none)').matches;
-const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-if (IOS) document.documentElement.classList.add('ios');
 // "1 ролик / 2 ролика / 5 роликов"
 const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
 const TAP = 1;                                  // blur kernel radius: 3×3 samples everywhere (spaced wider, same softness)
@@ -583,6 +579,7 @@ function blip(freq = 660, dur = .06, vol = .04){
   if (!soundOn) return;
   try {
     audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
     const o = audio.createOscillator(), g = audio.createGain();
     o.type = 'sine'; o.frequency.value = freq;
     g.gain.setValueAtTime(vol, audio.currentTime);
@@ -594,6 +591,8 @@ document.addEventListener('pointerover', e => {
   const el = e.target.closest('button,a');
   if (el && !el.contains(e.relatedTarget)) blip(880, .04, .025);
 });
+// iPhone: the sound engine may only start inside a touch — wake it on the first ones
+['touchend', 'pointerup'].forEach(t => addEventListener(t, () => { if (soundOn && audio && audio.state !== 'running') audio.resume(); }, { passive: true }));
 function setSound(on){ soundOn = on; $('#soundBtn').textContent = on ? '♪' : '×'; }
 $('#soundBtn').onclick = () => { setSound(!soundOn); blip(520, .1); };
 
@@ -981,6 +980,8 @@ function frame(now){
     u.uOpacity.value = edge * band * ringFade;
     m.renderOrder = Math.round(Math.cos(t) * 1000);   // fine-grained so overlaps don't flicker
   });
+  // phone ring: the same soft tick as hovering a card on a computer, each time a new card arrives in the middle
+  if (LAY.ring && best && best !== centerCard && centerCard) blip(520 + (PROJECTS.indexOf(best.userData.p) % 8) * 40, .06, .035);
   centerCard = best;
 
 
@@ -1236,7 +1237,7 @@ function loadClip(i){
   if (vi) {
     ctrl.kind = 'vimeo';
     // with sound: opening is a click, so the browser allows it; if it still refuses, the first tap unmutes
-    const q = new URLSearchParams({ api: 1, autoplay: IOS ? 0 : 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: IOS ? 1 : 0 });
+    const q = new URLSearchParams({ api: 1, autoplay: 1, muted: 0, title: 0, byline: 0, portrait: 0, dnt: 1, playsinline: 1, autopause: 0, controls: 0 });
     if (vi.hash) q.set('h', vi.hash);
     media.innerHTML = `<iframe src="https://player.vimeo.com/video/${vi.id}?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     ctrl.iframe = $('iframe', media);
