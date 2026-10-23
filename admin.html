@@ -1175,6 +1175,9 @@ function renderStats(){
       ${list('Какие ролики открывали', sum('video', r => r.item), projTitle)}
       ${list('Что нажимали', clicks, k => { const [kind, item] = k.split('|'); return KIND_LABEL[kind] + (item ? ': ' + item : ''); })}
       ${list('Ролики по странам', sum('video', r => r.country), countryName, flag)}
+      ${list('Тип устройства', sum('dev', r => r.item), k => ({ pc: '💻 Компьютер', phone: '📱 Телефон', tablet: '📲 Планшет' })[k] || k)}
+      <div class="stcol"><h3>Последние заходы</h3>${(stData.visits || []).length ? stData.visits.slice(0, 15).map(v => `
+        <div class="strow">${flag(v.country)}<span class="nm">${esc(countryName(v.country))} · ${({ pc: 'компьютер', phone: 'телефон', tablet: 'планшет' })[v.dev] || v.dev}</span><b style="white-space:nowrap">${new Date(v.ts).toLocaleString('ru', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</b></div>`).join('') : '<div class="hint">пока нет данных</div>'}</div>
       ${list('Устройства', sum('model', r => r.item), k => k)}
       ${list('Браузеры', sum('browser', r => r.item), k => k)}
     </div>

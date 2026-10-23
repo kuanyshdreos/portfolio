@@ -41,7 +41,13 @@ async function ensureSchema(db){
   await db.prepare(`CREATE TABLE IF NOT EXISTS hits (
     day TEXT NOT NULL, country TEXT NOT NULL, kind TEXT NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (day, country, kind, item))`).run();
+  await db.prepare('CREATE TABLE IF NOT EXISTS visits (ts INTEGER NOT NULL, country TEXT NOT NULL, dev TEXT NOT NULL)').run();
   schemaReady = true;
+}
+function deviceType(ua){
+  if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+  if (/Mobi|iPhone|iPod|Android/i.test(ua)) return 'phone';
+  return 'pc';
 }
 async function count(env, request, kind, item = ''){
   if (!env.DB || BOT_UA.test(request.headers.get('User-Agent') || '')) return;
@@ -51,6 +57,13 @@ async function count(env, request, kind, item = ''){
   await ensureSchema(env.DB);
   await env.DB.prepare(`INSERT INTO hits (day, country, kind, item, n) VALUES (?1, ?2, ?3, ?4, 1)
     ON CONFLICT (day, country, kind, item) DO UPDATE SET n = n + 1`).bind(day, country, kind, item).run();
+  if (kind === 'visit') {
+    const dev = deviceType(request.headers.get('User-Agent') || '');
+    await env.DB.prepare(`INSERT INTO hits (day, country, kind, item, n) VALUES (?1, ?2, 'dev', ?3, 1)
+      ON CONFLICT (day, country, kind, item) DO UPDATE SET n = n + 1`).bind(day, country, dev).run();
+    await env.DB.prepare('INSERT INTO visits (ts, country, dev) VALUES (?1, ?2, ?3)').bind(Date.now(), country, dev).run();
+    await env.DB.prepare('DELETE FROM visits WHERE ts < ?1').bind(Date.now() - 30 * 864e5).run();
+  }
 }
 async function stats(env){
   if (!env.DB) return { configured: false };
@@ -58,7 +71,8 @@ async function stats(env){
   const since = new Date(Date.now() - 29 * 864e5).toISOString().slice(0, 10);
   const { results } = await env.DB.prepare(
     'SELECT day, country, kind, item, n FROM hits WHERE day >= ?1 ORDER BY day').bind(since).all();
-  return { configured: true, today: new Date().toISOString().slice(0, 10), rows: results };
+  const v = await env.DB.prepare('SELECT ts, country, dev FROM visits ORDER BY ts DESC LIMIT 40').all();
+  return { configured: true, today: new Date().toISOString().slice(0, 10), rows: results, visits: v.results };
 }
 
 // ---------- admin settings + draft, shared by every device (same D1 database) ----------
@@ -133,7 +147,7 @@ export default {
     // "start over": wipes every counted visit and click
     if (url.pathname === '/admin/stats/reset' && request.method === 'POST') {
       if (!env.DB) return text('База не подключена.', 400);
-      try { await ensureSchema(env.DB); await env.DB.prepare('DELETE FROM hits').run(); return text('ok', 200); }
+      try { await ensureSchema(env.DB); await env.DB.prepare('DELETE FROM hits').run(); await env.DB.prepare('DELETE FROM visits').run(); return text('ok', 200); }
       catch (e) { return text('Ошибка базы: ' + e.message, 500); }
     }
     if (url.pathname === '/admin/sync') {
