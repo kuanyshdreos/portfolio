@@ -1178,10 +1178,9 @@ function renderStats(){
       ${list('Тип устройства', sum('dev', r => r.item), k => ({ pc: '💻 Компьютер', phone: '📱 Телефон', tablet: '📲 Планшет' })[k] || k)}
       <div class="stcol"><h3>Последние заходы</h3>${(stData.visits || []).length ? stData.visits.slice(0, 15).map(v => `
         <div class="strow">${flag(v.country)}<span class="nm">${esc(countryName(v.country))} · ${({ pc: 'компьютер', phone: 'телефон', tablet: 'планшет' })[v.dev] || v.dev}</span><b style="white-space:nowrap">${new Date(v.ts).toLocaleString('ru', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</b></div>`).join('') : '<div class="hint">пока нет данных</div>'}</div>
-      ${list('Устройства', sum('model', r => r.item), k => k)}
       ${list('Браузеры', sum('browser', r => r.item), k => k)}
     </div>
-    <p class="hint" style="margin-top:12px">Модель айфона определяется по размеру экрана (например «iPhone 15 / 16» — у них одинаковый экран), у Android — точная модель, если её отдаёт браузер. У компьютеров видна система и разрешение экрана, модель ноутбука браузеры не сообщают. Время по UTC. Ваши просмотры в «Предпросмотре» не считаются. Боты отсеиваются. IP-адреса не хранятся.</p>`;
+    <p class="hint" style="margin-top:12px">Время по UTC. Ваши просмотры в «Предпросмотре» не считаются. Боты отсеиваются. IP-адреса не хранятся.</p>`;
 }
 $$('#stPeriod button').forEach(b => b.onclick = () => {
   stDays = +b.dataset.d; $$('#stPeriod button').forEach(x => x.classList.toggle('on', x === b));
