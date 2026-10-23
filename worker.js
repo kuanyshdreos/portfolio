@@ -5,7 +5,7 @@
 // - Visit statistics: each page visit and each opened video is counted per day and country
 //   in a Cloudflare D1 database (binding DB). No IP addresses or personal data are stored.
 
-const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/stats(\/reset)?$/;
+const ADMIN_PATH = /^\/admin(\.html)?\/?$|^\/admin\/(stats(\/reset)?|sync)$/;
 // click kinds the site may report: video opened, price popup, package opened, "order" pressed,
 // contact from the menu, brand logo, category filter
 const HIT_KINDS = new Set(['video', 'price', 'pkg', 'order', 'contact', 'client', 'filter', 'gear', 'model', 'browser']);
@@ -61,6 +61,38 @@ async function stats(env){
   return { configured: true, today: new Date().toISOString().slice(0, 10), rows: results };
 }
 
+// ---------- admin settings + draft, shared by every device (same D1 database) ----------
+let syncReady = false;
+async function ensureSync(db){
+  if (syncReady) return;
+  await db.prepare('CREATE TABLE IF NOT EXISTS sync (k TEXT PRIMARY KEY, v TEXT NOT NULL, ts INTEGER NOT NULL DEFAULT 0)').run();
+  syncReady = true;
+}
+async function readSync(env){
+  if (!env.DB) return { configured: false };
+  await ensureSync(env.DB);
+  const { results } = await env.DB.prepare('SELECT k, v, ts FROM sync').all();
+  const out = { configured: true };
+  for (const r of results) { try { out[r.k] = { value: JSON.parse(r.v), ts: r.ts }; } catch {} }
+  return out;
+}
+async function writeSync(env, request){
+  if (!env.DB) return text('База не подключена.', 400);
+  const raw = await request.text();
+  if (raw.length > 1800000) return text('Слишком большой черновик.', 413);
+  let body; try { body = JSON.parse(raw); } catch { return text('bad json', 400); }
+  await ensureSync(env.DB);
+  for (const k of ['cfg', 'draft']) {
+    if (!body[k] || typeof body[k] !== 'object') continue;
+    const ts = Math.floor(+body[k + 'Ts'] || Date.now());
+    // never let an older copy from a stale tab overwrite a newer one
+    await env.DB.prepare(`INSERT INTO sync (k, v, ts) VALUES (?1, ?2, ?3)
+      ON CONFLICT (k) DO UPDATE SET v = ?2, ts = ?3 WHERE excluded.ts >= sync.ts`)
+      .bind(k, JSON.stringify(body[k]), ts).run();
+  }
+  return text('ok', 200);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -103,6 +135,13 @@ export default {
       if (!env.DB) return text('База не подключена.', 400);
       try { await ensureSchema(env.DB); await env.DB.prepare('DELETE FROM hits').run(); return text('ok', 200); }
       catch (e) { return text('Ошибка базы: ' + e.message, 500); }
+    }
+    if (url.pathname === '/admin/sync') {
+      try {
+        if (request.method === 'PUT') return await writeSync(env, request);
+        return new Response(JSON.stringify(await readSync(env)), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+      } catch (e) { return text('Ошибка базы: ' + e.message, 500); }
     }
     if (url.pathname === '/admin/stats') {
       try {

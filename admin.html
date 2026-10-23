@@ -358,7 +358,7 @@
           <label class="f"><span>Папка сайта в репо</span><input type="text" id="ghDir" placeholder="(корень)"></label>
         </div>
         <label class="f"><span>Токен GitHub (fine-grained, Contents: read & write)</span><input type="password" id="ghToken" autocomplete="off"></label>
-        <label class="inline" style="margin-bottom:12px;font-size:13px"><input type="checkbox" id="ghRemember"> запомнить на этом компьютере</label>
+        <label class="inline" style="margin-bottom:12px;font-size:13px"><input type="checkbox" id="ghRemember"> запомнить и синхронизировать между устройствами</label>
         <button class="btn green" id="ghPublish">Опубликовать на GitHub</button>
       </div>
       <div class="box">
@@ -452,7 +452,10 @@ function normalize(d){
 
 // ---------- draft persistence ----------
 let saveT;
+let syncReady = false;
+const num = k => +localStorage.getItem(k) || 0;
 function changed(){
+  if (syncReady) localStorage.setItem(DRAFT + ':ts', Date.now());
   clearTimeout(saveT);
   setStatus('сохраняю…');
   saveT = setTimeout(() => {
@@ -463,7 +466,19 @@ function changed(){
       setStatus(dirty ? 'черновик сохранён · не опубликовано' + (pending.size ? ` · новых лупов: ${pending.size}` : '') : 'всё опубликовано', dirty);
     } catch (e) { setStatus('не удалось сохранить черновик: ' + e.message, true); }
     renderIssues();
+    if (syncReady) pushSync();
   }, 250);
+}
+// ---------- sync between devices (stored in the site's D1 database, behind the admin password) ----------
+let syncT, syncOn = false;
+function pushSync(){
+  if (!syncOn) return;
+  clearTimeout(syncT);
+  syncT = setTimeout(() => {
+    const body = { draft: D, draftTs: num(DRAFT + ':ts') };
+    if (typeof cfgForSync === 'function') { body.cfg = cfgForSync(); body.cfgTs = num(CFG + ':ts'); }
+    fetch('/admin/sync', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+  }, 800);
 }
 function setStatus(t, warn){ $('#status').textContent = t; $('#status').classList.toggle('warn', !!warn); }
 addEventListener('beforeunload', e => { if (pending.size) { e.preventDefault(); e.returnValue = ''; } });
@@ -902,7 +917,10 @@ function saveCfg(){
   cfg.siteUrl = $('#siteUrl').value.trim(); cfg.remember = $('#ghRemember').checked;
   const toStore = { ...cfg, token: cfg.remember ? $('#ghToken').value.trim() : '' };
   localStorage.setItem(CFG, JSON.stringify(toStore));
+  localStorage.setItem(CFG + ':ts', Date.now());
+  pushSync();
 }
+const cfgForSync = () => ({ ...cfg, token: cfg.remember ? $('#ghToken').value.trim() : '' });
 ['#ghRepo', '#ghBranch', '#ghDir', '#siteUrl', '#ghToken'].forEach(s => $(s).addEventListener('change', () => { saveCfg(); if (s === '#siteUrl') renderEditor(); }));
 $('#ghRemember').onchange = saveCfg;
 function log(t, cls){
@@ -1227,6 +1245,19 @@ function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); 
   catch { published = null; }
   let draft = null;
   try { draft = JSON.parse(localStorage.getItem(DRAFT)); } catch {}
+  // pull what the other devices saved: newer wins
+  try {
+    const r = await fetch('/admin/sync', { cache: 'no-store', credentials: 'same-origin' });
+    if (r.ok) {
+      const s = await r.json();
+      if (s.configured) {
+        syncOn = true;
+        if (s.cfg && s.cfg.ts > num(CFG + ':ts')) { Object.assign(cfg, s.cfg.value); localStorage.setItem(CFG, JSON.stringify(cfg)); localStorage.setItem(CFG + ':ts', s.cfg.ts); }
+        else if (!s.cfg && cfg.repo) localStorage.setItem(CFG + ':ts', num(CFG + ':ts') || Date.now());
+        if (s.draft && s.draft.ts > num(DRAFT + ':ts')) { draft = s.draft.value; localStorage.setItem(DRAFT, JSON.stringify(draft)); localStorage.setItem(DRAFT + ':ts', s.draft.ts); }
+      }
+    }
+  } catch {}
   D = normalize(JSON.parse(JSON.stringify(draft || published || blank())));
   localStorage.removeItem(BLOBS);    // blob links from an old session are dead
   $('#ghRepo').value = cfg.repo || ''; $('#ghBranch').value = cfg.branch || 'main'; $('#ghDir').value = cfg.dir || '';
@@ -1234,6 +1265,8 @@ function renderAll(){ renderCats(); renderList(); renderEditor(); renderPkgs(); 
   renderAll();
   if (!published) setStatus('data.json не найден рядом — откройте админку через сайт или загрузите файл', true);
   else changed();
+  syncReady = true;
+  if (syncOn) { if (!num(DRAFT + ':ts')) localStorage.setItem(DRAFT + ':ts', Date.now()); pushSync(); }
 })();
 </script>
 </body>
