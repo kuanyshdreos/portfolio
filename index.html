@@ -503,10 +503,10 @@
 <nav id="menu" class="panel">
   <button class="close" data-close>закрыть <b>×</b></button>
   <div class="links">
-    <a class="fade" href="#" data-go="works" style="transition-delay:.25s">работы</a>
-    <a class="fade" href="#" data-go="about" style="transition-delay:.3s">обо мне</a>
-    <a class="fade" href="#" data-go="price" style="transition-delay:.35s">цены</a>
-    <a class="fade" href="#" data-go="contact" style="transition-delay:.4s">контакты</a>
+    <a class="fade" href="#" data-go="works" style="transition-delay:.25s,.25s,.25s,0s">работы</a>
+    <a class="fade" href="#" data-go="about" style="transition-delay:.3s,.3s,.3s,0s">обо мне</a>
+    <a class="fade" href="#" data-go="price" style="transition-delay:.35s,.35s,.35s,0s">цены</a>
+    <a class="fade" href="#" data-go="contact" style="transition-delay:.4s,.4s,.4s,0s">контакты</a>
   </div>
   <div class="foot fade" style="transition-delay:.45s"><a class="mail"></a><div class="socials"></div></div>
 </nav>
@@ -779,7 +779,7 @@ function prepareMedia(p){
 
   if (isVid(p.loop)) {
     const v = document.createElement('video');
-    Object.assign(v, { muted: true, loop: true, playsInline: true, preload: 'auto', crossOrigin: 'anonymous' });
+    Object.assign(v, { muted: true, loop: true, playsInline: true, preload: isTouch ? 'none' : 'auto', crossOrigin: 'anonymous' });
     v.setAttribute('playsinline', '');
     v.addEventListener('loadeddata', () => {
       p._vidAspect = v.videoWidth / v.videoHeight;
@@ -1069,6 +1069,7 @@ function frame(now){
     // on the ring only one turn is shown (cards further along would sit on top of each other)
     const ringFade = LAY.ring ? 1 - smooth(2.5, 3.05, Math.abs(t)) : 1;
     u.uOpacity.value = edge * band * ringFade;
+    m.visible = u.uOpacity.value > .004;              // fully faded cards are not drawn at all (most of the 48+ on a phone)
     m.renderOrder = Math.round(Math.cos(t) * 1000);   // fine-grained so overlaps don't flicker
   });
   // phone ring: the same soft tick as hovering a card on a computer, each time a new card arrives in the middle

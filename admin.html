@@ -92,7 +92,7 @@
   .brandprev{width:64px;height:64px;border-radius:50%;background:#111 center/contain no-repeat;flex:none;border:1px solid var(--line)}
   .brandprev.sq{border-radius:12px;background-color:#fff}
   /* stats */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
   .kpi{background:#fafaf8;border:1px solid var(--line);border-radius:12px;padding:14px}
   .kpi small{display:block;color:var(--muted);font-size:12px}
   .kpi b{display:block;font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1;margin-top:4px}
@@ -101,15 +101,17 @@
   .chart div:hover{background:var(--acc)}
   .chart div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);display:none;white-space:nowrap}
   .chart div:hover span{display:block}
-  .stgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .stgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px;margin-top:14px}
+  .stcol{min-width:0}
   .stcol h3{font-size:13px;margin-bottom:8px}
   .strow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #f0f0ee;font-size:14px}
   .strow img{width:24px;height:18px;border-radius:3px;object-fit:cover;flex:none;background:#eee}
   .strow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .strow .bar{flex:0 0 90px;height:6px;border-radius:3px;background:#eee;overflow:hidden}
   .strow .bar i{display:block;height:100%;background:var(--acc)}
-  .strow b{width:38px;text-align:right;font-variant-numeric:tabular-nums}
-  @media (max-width:900px){ .kpis{grid-template-columns:1fr 1fr} .stgrid{grid-template-columns:1fr} }
+  .strow b{flex:none;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
+  @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .stgrid{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:520px){ .strow .bar{flex:0 0 48px} .strow{gap:8px} .kpi{padding:12px} .kpi b{font-size:26px} .chart{gap:1px} }
   .coverbox{display:flex;gap:16px;align-items:flex-start;background:#fafaf8;border-radius:10px;padding:12px;margin-bottom:12px}
   .coverbox canvas{width:260px;aspect-ratio:4/3;border-radius:12px;display:block;background:#111}
   .swatch{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
